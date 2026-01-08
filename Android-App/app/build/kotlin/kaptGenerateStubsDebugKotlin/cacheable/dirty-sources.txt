@@ -1,0 +1,14 @@
+/home/yuvraj/Projects/Customer-Support/Android-App/app/src/main/java/com/customersupport/data/CallLogReader.kt
+/home/yuvraj/Projects/Customer-Support/Android-App/app/src/main/java/com/customersupport/ui/theme/Theme.kt
+/home/yuvraj/Projects/Customer-Support/Android-App/app/src/main/java/com/customersupport/ui/screens/FormScreen.kt
+/home/yuvraj/Projects/Customer-Support/Android-App/app/src/main/java/com/customersupport/receiver/BootReceiver.kt
+/home/yuvraj/Projects/Customer-Support/Android-App/app/src/main/java/com/customersupport/receiver/SmsReceiver.kt
+/home/yuvraj/Projects/Customer-Support/Android-App/app/src/main/java/com/customersupport/data/SmsReader.kt
+/home/yuvraj/Projects/Customer-Support/Android-App/app/src/main/java/com/customersupport/di/AppModule.kt
+/home/yuvraj/Projects/Customer-Support/Android-App/app/src/main/java/com/customersupport/ui/screens/DashboardScreen.kt
+/home/yuvraj/Projects/Customer-Support/Android-App/app/src/main/java/com/customersupport/MainActivity.kt
+/home/yuvraj/Projects/Customer-Support/Android-App/app/src/main/java/com/customersupport/ui/screens/SettingsScreen.kt
+/home/yuvraj/Projects/Customer-Support/Android-App/app/src/main/java/com/customersupport/CustomerSupportApp.kt
+/home/yuvraj/Projects/Customer-Support/Android-App/app/src/main/java/com/customersupport/service/SocketService.kt
+/home/yuvraj/Projects/Customer-Support/Android-App/app/src/main/java/com/customersupport/socket/SocketManager.kt
+/home/yuvraj/Projects/Customer-Support/Android-App/app/src/main/java/com/customersupport/data/PreferencesManager.kt
