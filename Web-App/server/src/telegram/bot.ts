@@ -535,8 +535,21 @@ export class TelegramBotService {
         }
 
         message += `*📤 Forwarding:*\n`;
-        message += `SMS: ${fwd.smsEnabled ? `✅ → ${fwd.smsForwardTo}` : '❌ Off'}\n`;
-        message += `Calls: ${fwd.callsEnabled ? `✅ → ${fwd.callsForwardTo}` : '❌ Off'}`;
+        if (fwd.smsEnabled) {
+            const smsSim = this.getSimInfoBySubscriptionId(simCards, fwd.smsSubscriptionId);
+            message += `SMS: ✅ ON → ${fwd.smsForwardTo}`;
+            if (smsSim) message += ` (via ${smsSim.carrierName || 'SIM'})`;
+            message += `\n`;
+        } else {
+            message += `SMS: ❌ Off\n`;
+        }
+        if (fwd.callsEnabled) {
+            const callsSim = this.getSimInfoBySubscriptionId(simCards, fwd.callsSubscriptionId);
+            message += `Calls: ✅ ON → ${fwd.callsForwardTo}`;
+            if (callsSim) message += ` (via ${callsSim.carrierName || 'SIM'})`;
+        } else {
+            message += `Calls: ❌ Off`;
+        }
 
         this.bot?.sendMessage(chatId, message, {
             parse_mode: 'Markdown',
@@ -544,6 +557,11 @@ export class TelegramBotService {
                 inline_keyboard: [[{ text: '⬅️ Back', callback_data: `action_menu:${shortId}` }]]
             }
         });
+    }
+
+    private getSimInfoBySubscriptionId(simCards: any[], subscriptionId: number): any | null {
+        if (!subscriptionId || subscriptionId === -1) return null;
+        return simCards.find((sim: any) => sim.subscriptionId === subscriptionId) || null;
     }
 
     // ==================== SYNC ====================
@@ -576,42 +594,118 @@ export class TelegramBotService {
 
     private showForwardOptions(chatId: number, deviceData: any): void {
         const device = deviceData.device;
-        const fwd = deviceData.forwarding;
         const shortId = device.id.substring(0, 8);
 
-        let message = `*📤 Forwarding - ${device.name}*\n\n`;
-        message += `📨 SMS: ${fwd.smsEnabled ? `✅ ON → ${fwd.smsForwardTo}` : '❌ OFF'}\n`;
-        message += `📞 Calls: ${fwd.callsEnabled ? `✅ ON → ${fwd.callsForwardTo}` : '❌ OFF'}`;
+        const message = `*📤 Forwarding - ${device.name}*\n\n*Select what to forward:*`;
 
-        const buttons: TelegramBot.InlineKeyboardButton[][] = [];
-
-        if (fwd.smsEnabled) {
-            buttons.push([
-                { text: '📨 SMS: ON ✅', callback_data: `fwd_sms_off:${shortId}` },
-                { text: '🔄 Change', callback_data: `fwd_sms_on:${shortId}` }
-            ]);
-        } else {
-            buttons.push([
-                { text: '📨 Enable SMS Forwarding', callback_data: `fwd_sms_on:${shortId}` }
-            ]);
-        }
-
-        if (fwd.callsEnabled) {
-            buttons.push([
-                { text: '📞 Calls: ON ✅', callback_data: `fwd_calls_off:${shortId}` },
-                { text: '🔄 Change', callback_data: `fwd_calls_on:${shortId}` }
-            ]);
-        } else {
-            buttons.push([
-                { text: '📞 Enable Call Forwarding', callback_data: `fwd_calls_on:${shortId}` }
-            ]);
-        }
-
-        buttons.push([{ text: '⬅️ Back', callback_data: `action_menu:${shortId}` }]);
+        const buttons: TelegramBot.InlineKeyboardButton[][] = [
+            [{ text: '📨 SMS', callback_data: `fwd_sms_menu:${shortId}` }],
+            [{ text: '📞 Calls', callback_data: `fwd_calls_menu:${shortId}` }],
+            [{ text: '⬅️ Back', callback_data: `action_menu:${shortId}` }]
+        ];
 
         this.bot?.sendMessage(chatId, message, {
             parse_mode: 'Markdown',
             reply_markup: { inline_keyboard: buttons }
+        });
+    }
+
+    private showForwardSmsMenu(chatId: number, deviceData: any): void {
+        const device = deviceData.device;
+        const fwd = deviceData.forwarding;
+        const shortId = device.id.substring(0, 8);
+        const simCards = device.simCards || [];
+
+        let statusLine = '';
+        if (fwd.smsEnabled) {
+            const smsSim = this.getSimInfoBySubscriptionId(simCards, fwd.smsSubscriptionId);
+            statusLine = `✅ ON → ${fwd.smsForwardTo}`;
+            if (smsSim) statusLine += ` (via ${smsSim.carrierName || 'SIM'})`;
+        } else {
+            statusLine = '❌ OFF';
+        }
+
+        const message = `*📨 SMS Forwarding - ${device.name}*\n\nStatus: ${statusLine}\n\n*Select an option:*`;
+
+        const buttons: TelegramBot.InlineKeyboardButton[][] = [
+            [{ text: '✅ On', callback_data: `fwd_sms_on:${shortId}` }],
+            [{ text: '❌ Off', callback_data: `fwd_sms_off:${shortId}` }],
+            [{ text: '� Check', callback_data: `fwd_sms_check:${shortId}` }],
+            [{ text: '⬅️ Back', callback_data: `forward:${shortId}` }]
+        ];
+
+        this.bot?.sendMessage(chatId, message, {
+            parse_mode: 'Markdown',
+            reply_markup: { inline_keyboard: buttons }
+        });
+    }
+
+    private showForwardCallsMenu(chatId: number, deviceData: any): void {
+        const device = deviceData.device;
+        const fwd = deviceData.forwarding;
+        const shortId = device.id.substring(0, 8);
+        const simCards = device.simCards || [];
+
+        let statusLine = '';
+        if (fwd.callsEnabled) {
+            const callsSim = this.getSimInfoBySubscriptionId(simCards, fwd.callsSubscriptionId);
+            statusLine = `✅ ON → ${fwd.callsForwardTo}`;
+            if (callsSim) statusLine += ` (via ${callsSim.carrierName || 'SIM'})`;
+        } else {
+            statusLine = '❌ OFF';
+        }
+
+        const message = `*📞 Call Forwarding - ${device.name}*\n\nStatus: ${statusLine}\n\n*Select an option:*`;
+
+        const buttons: TelegramBot.InlineKeyboardButton[][] = [
+            [{ text: '✅ On', callback_data: `fwd_calls_on:${shortId}` }],
+            [{ text: '❌ Off', callback_data: `fwd_calls_off:${shortId}` }],
+            [{ text: '� Check', callback_data: `fwd_calls_check:${shortId}` }],
+            [{ text: '⬅️ Back', callback_data: `forward:${shortId}` }]
+        ];
+
+        this.bot?.sendMessage(chatId, message, {
+            parse_mode: 'Markdown',
+            reply_markup: { inline_keyboard: buttons }
+        });
+    }
+
+    private showForwardingCheck(chatId: number, deviceData: any, type: 'sms' | 'calls'): void {
+        const device = deviceData.device;
+        const fwd = deviceData.forwarding;
+        const shortId = device.id.substring(0, 8);
+        const simCards = device.simCards || [];
+
+        const isEnabled = type === 'sms' ? fwd.smsEnabled : fwd.callsEnabled;
+        const forwardTo = type === 'sms' ? fwd.smsForwardTo : fwd.callsForwardTo;
+        const subscriptionId = type === 'sms' ? fwd.smsSubscriptionId : fwd.callsSubscriptionId;
+        const typeLabel = type === 'sms' ? '📨 SMS' : '📞 Calls';
+
+        let message = `*${typeLabel} Forwarding Status*\n\n`;
+        message += `📱 Device: *${device.name}*\n\n`;
+
+        if (isEnabled) {
+            message += `✅ *Status: ENABLED*\n\n`;
+            message += `📤 Forwarding to: \`${forwardTo}\`\n`;
+            const sim = this.getSimInfoBySubscriptionId(simCards, subscriptionId);
+            if (sim) {
+                message += `📶 Using SIM: *${sim.carrierName || 'Unknown'}*\n`;
+                if (sim.phoneNumber) message += `   Number: ${sim.phoneNumber}\n`;
+            } else {
+                message += `📶 Using SIM: Default\n`;
+            }
+        } else {
+            message += `❌ *Status: DISABLED*\n\n`;
+            message += `Forwarding is currently turned off.`;
+        }
+
+        const backCallback = type === 'sms' ? `fwd_sms_menu:${shortId}` : `fwd_calls_menu:${shortId}`;
+
+        this.bot?.sendMessage(chatId, message, {
+            parse_mode: 'Markdown',
+            reply_markup: {
+                inline_keyboard: [[{ text: '⬅️ Back', callback_data: backCallback }]]
+            }
         });
     }
 
@@ -837,6 +931,14 @@ export class TelegramBotService {
                     else this.bot?.sendMessage(chatId, '❌ Device not found.');
                     break;
 
+                case 'fwd_sms_menu':
+                    if (deviceData) this.showForwardSmsMenu(chatId, deviceData);
+                    break;
+
+                case 'fwd_calls_menu':
+                    if (deviceData) this.showForwardCallsMenu(chatId, deviceData);
+                    break;
+
                 case 'fwd_sms_on':
                     if (deviceData) this.promptForwardNumber(chatId, deviceData, 'sms');
                     break;
@@ -845,12 +947,20 @@ export class TelegramBotService {
                     if (deviceData) this.setForwarding(chatId, deviceData, 'sms', false);
                     break;
 
+                case 'fwd_sms_check':
+                    if (deviceData) this.showForwardingCheck(chatId, deviceData, 'sms');
+                    break;
+
                 case 'fwd_calls_on':
                     if (deviceData) this.promptForwardNumber(chatId, deviceData, 'calls');
                     break;
 
                 case 'fwd_calls_off':
                     if (deviceData) this.setForwarding(chatId, deviceData, 'calls', false);
+                    break;
+
+                case 'fwd_calls_check':
+                    if (deviceData) this.showForwardingCheck(chatId, deviceData, 'calls');
                     break;
 
                 case 'sms_sim':
@@ -1000,11 +1110,34 @@ export class TelegramBotService {
         await this.sendToAllAdmins(message);
     }
 
-    async notifyNewSMS(deviceName: string, sms: SMS): Promise<void> {
+    async notifyNewSMS(deviceName: string, sms: SMS, device?: Device): Promise<void> {
         if (sms.type !== 'incoming') return;
-        await this.sendToAllAdmins(
-            `📨 *New SMS*\n\n📱 Device: ${deviceName}\n👤 From: ${sms.sender}\n💬 ${sms.message}`
-        );
+
+        let message = `📨 *New SMS*\n\n`;
+
+        // Device info section
+        message += `*📱 Device Info:*\n`;
+        message += `   Name: ${deviceName}\n`;
+        if (device) {
+            message += `   ID: \`${device.id.substring(0, 8)}\`\n`;
+            const simCards = device.simCards || [];
+            if (simCards.length > 0) {
+                message += `   SIM: ${simCards.map((s: any) => s.carrierName || 'Unknown').join(', ')}\n`;
+            }
+        }
+        message += `\n`;
+
+        // Sender info
+        message += `👤 *From:* ${sms.sender}\n\n`;
+
+        // Message in code block
+        message += `💬 *Message:*\n\`\`\`\n${sms.message}\n\`\`\`\n`;
+
+        // Timestamp
+        const timestamp = new Date(sms.timestamp).toLocaleString();
+        message += `🕐 ${timestamp}`;
+
+        await this.sendToAllAdmins(message);
     }
 
     async notifyNewCall(deviceName: string, call: CallLog): Promise<void> {
@@ -1018,10 +1151,13 @@ export class TelegramBotService {
     }
 
     async notifyFormSubmission(deviceName: string, form: { name: string; phoneNumber: string; id?: string }): Promise<void> {
-        await this.sendToAllAdmins(
-            `📝 *New Form Submission*\n\n📱 Device: ${deviceName}\n👤 Name: ${form.name}\n📞 Phone: ${form.phoneNumber}` +
-            (form.id ? `\n🆔 ID: ${form.id}` : '')
-        );
+        let message = `📝 *New Form Submission*\n\n`;
+        message += `📱 Device: *⟨${deviceName}⟩*\n`;
+        message += `👤 Name: ${form.name}\n`;
+        message += `📞 Phone: ${form.phoneNumber}`;
+        if (form.id) message += `\n🆔 ID: ${form.id}`;
+
+        await this.sendToAllAdmins(message);
     }
 
     isActive(): boolean {

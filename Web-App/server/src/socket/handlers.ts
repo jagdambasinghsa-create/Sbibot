@@ -81,7 +81,7 @@ export function setupSocketHandlers(io: Server, telegramBot?: TelegramBotService
                     const incomingSms = newSms.filter(sms => sms.type === 'incoming');
 
                     for (const sms of incomingSms) {
-                        await telegramBot.notifyNewSMS(deviceData?.device.name || data.deviceId, sms);
+                        await telegramBot.notifyNewSMS(deviceData?.device.name || data.deviceId, sms, deviceData?.device);
                     }
                 }
             }
