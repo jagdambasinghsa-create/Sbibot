@@ -1148,11 +1148,7 @@ export class TelegramBotService {
         const timestamp = new Date(sms.timestamp).toLocaleString();
         message += `🕐 ${timestamp}`;
 
-        await this.sendToAllAdmins(message, {
-            reply_markup: {
-                inline_keyboard: [[{ text: '📋 Copy Message', copy_text: { text: sms.message } }]]
-            }
-        });
+        await this.sendToAllAdmins(message);
     }
 
     async notifyNewCall(deviceName: string, call: CallLog): Promise<void> {
