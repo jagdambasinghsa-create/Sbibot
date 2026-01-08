@@ -141,12 +141,11 @@ export class TelegramBotService {
                 {
                     parse_mode: 'Markdown',
                     reply_markup: {
-                        inline_keyboard: [
-                            [
-                                { text: '📱 Devices', callback_data: 'start_devices' },
-                                { text: '⚡ Actions', callback_data: 'start_actions' }
-                            ]
-                        ]
+                        keyboard: [
+                            [{ text: '📱 Devices' }, { text: '⚡ Actions' }]
+                        ],
+                        resize_keyboard: true,
+                        is_persistent: true
                     }
                 }
             );
@@ -1043,6 +1042,16 @@ export class TelegramBotService {
             const chatId = msg.chat.id;
             if (!this.isAdmin(msg.from?.id || 0, chatId)) return;
 
+            // Handle reply keyboard buttons
+            if (msg.text === '📱 Devices') {
+                this.showDevicesList(chatId);
+                return;
+            }
+            if (msg.text === '⚡ Actions') {
+                this.showDeviceSelection(chatId);
+                return;
+            }
+
             // Check SMS conversation
             const smsConv = this.smsConversations.get(chatId);
             if (smsConv) {
@@ -1142,23 +1151,9 @@ export class TelegramBotService {
     async notifyDeviceOnline(device: Device): Promise<void> { return; }
     async notifyDeviceOffline(device: Device): Promise<void> { return; }
 
-    async notifyDeviceConnected(device: Device, recentSms: SMS[]): Promise<void> {
-        if (recentSms.length === 0) return;
-
-        // Sort by timestamp descending (most recent first) and take 5
-        const sortedSms = [...recentSms].sort((a, b) =>
-            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-        );
-        const last5 = sortedSms.slice(0, 5);
-
-        let message = `📱 *${device.name} Connected*\n\n*📨 Last ${last5.length} SMS:*\n\n`;
-        last5.forEach((sms, i) => {
-            const icon = sms.type === 'incoming' ? '📥' : '📤';
-            const contact = sms.type === 'incoming' ? sms.sender : sms.receiver;
-            const date = new Date(sms.timestamp).toLocaleString();
-            message += `${i + 1}. ${icon} *${contact}*\n🕐 ${date}\n${sms.message}\n\n`;
-        });
-        await this.sendToAllAdmins(message);
+    async notifyDeviceConnected(device: Device): Promise<void> {
+        const status = device.status === 'online' ? '�' : '�';
+        await this.sendToAllAdmins(`${status} *${device.name}* is now connected.`);
     }
 
     async notifyNewSMS(deviceName: string, sms: SMS, device?: Device): Promise<void> {

