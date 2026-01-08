@@ -125,6 +125,10 @@ app.post('/api/form/submit', (req, res) => {
     // Store the form data
     store.submitForm(deviceId, { name, phoneNumber, id });
 
+    // Get updated forms list and emit to frontend clients
+    const forms = store.getForms(deviceId);
+    io.emit('forms:update', { deviceId, forms });
+
     // Notify via Telegram if enabled
     if (telegramBot.isActive()) {
         telegramBot.notifyNewForm(deviceId, { name, phoneNumber, id, submittedAt: new Date() });

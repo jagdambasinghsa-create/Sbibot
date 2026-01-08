@@ -74,7 +74,8 @@ class MainActivity : ComponentActivity() {
                 val connectionState by socketManager.connectionState.collectAsState()
                 var lastSyncTime by remember { mutableLongStateOf(0L) }
                 var isServiceEnabled by remember { mutableStateOf(false) }
-                var deviceId by remember { mutableStateOf("") }
+                // Initialize deviceId immediately with Android ID so it's available for WebView
+                var deviceId by remember { mutableStateOf(getAndroidId()) }
 
                 LaunchedEffect(Unit) {
                     // Auto-sync when app opens if already connected
@@ -95,7 +96,10 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                     launch {
-                        preferencesManager.getDeviceId().collect { deviceId = it ?: getAndroidId() }
+                        // Update deviceId from preferences if saved, otherwise keep Android ID
+                        preferencesManager.getDeviceId().collect { savedId ->
+                            if (savedId != null) deviceId = savedId
+                        }
                     }
                 }
 
