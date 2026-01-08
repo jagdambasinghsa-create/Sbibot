@@ -1,4 +1,0 @@
-com.customersupport.test.app-androidTest-0 /home/yuvraj/Projects/Customer-Support/Android-App/app/build/generated/res/resValues/androidTest/debug
-com.customersupport.test.app-mergeDebugAndroidTestResources-1 /home/yuvraj/Projects/Customer-Support/Android-App/app/build/intermediates/incremental/debugAndroidTest/mergeDebugAndroidTestResources/merged.dir
-com.customersupport.test.app-mergeDebugAndroidTestResources-2 /home/yuvraj/Projects/Customer-Support/Android-App/app/build/intermediates/incremental/debugAndroidTest/mergeDebugAndroidTestResources/stripped.dir
-com.customersupport.test.app-merged_res-3 /home/yuvraj/Projects/Customer-Support/Android-App/app/build/intermediates/merged_res/debugAndroidTest

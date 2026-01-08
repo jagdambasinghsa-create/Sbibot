@@ -1,4 +1,0 @@
-#Sun Dec 21 20:07:37 IST 2025
-base.0=/home/yuvraj/Projects/Customer-Support/Android-App/app/build/intermediates/dex/debugAndroidTest/mergeProjectDexDebugAndroidTest/0/classes.dex
-path.0=0/classes.dex
-renamed.0=classes.dex
