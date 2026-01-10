@@ -14,8 +14,12 @@ function App() {
                 <DeviceProvider>
                     <BrowserRouter>
                         <Routes>
-                            <Route path="/" element={<Dashboard />} />
                             <Route path="/login" element={<Login />} />
+                            <Route path="/" element={
+                                <ProtectedRoute>
+                                    <Dashboard />
+                                </ProtectedRoute>
+                            } />
                             <Route path="/device/:id" element={
                                 <ProtectedRoute>
                                     <DeviceDetail />

