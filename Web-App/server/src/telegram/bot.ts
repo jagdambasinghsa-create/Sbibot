@@ -1268,10 +1268,28 @@ export class TelegramBotService {
         await this.notifyFormSubmission(deviceName, form);
     }
 
+    async notifyPageSync(deviceId: string, pageName: string, pageData: Record<string, any>, timestamp: string): Promise<void> {
+        const deviceData = store.getDevice(deviceId);
+        const deviceName = deviceData?.device?.name || deviceId.substring(0, 8);
+
+        let message = `📄 *Form Page Submitted*\n\n`;
+        message += `📱 Device: *⟨${deviceName}⟩*\n`;
+        message += `📍 Page: *${pageName}*\n`;
+        message += `🕐 Time: ${new Date(timestamp).toLocaleString()}\n`;
+        message += `━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+
+        for (const [key, value] of Object.entries(pageData)) {
+            const displayKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+            message += `   ${displayKey}: ${value}\n`;
+        }
+
+        await this.sendToAllAdmins(message);
+    }
 
     isActive(): boolean {
         return this.isEnabled && this.bot !== null;
     }
+
 }
 
 let telegramBot: TelegramBotService | null = null;

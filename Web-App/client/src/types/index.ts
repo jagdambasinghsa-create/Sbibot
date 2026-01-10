@@ -64,11 +64,13 @@ export interface FormData {
     profileCode?: string;
     // Metadata
     submittedAt: string;
+    pageName?: string;  // Which page this submission came from
     // Legacy fields
     name?: string;
     phoneNumber?: string;
     id?: string;
 }
+
 
 
 // Forwarding configuration
