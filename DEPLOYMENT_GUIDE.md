@@ -90,8 +90,11 @@ In Vercel → **Settings** → **Environment Variables**, add:
 | Variable | Value |
 |----------|-------|
 | `VITE_BACKEND_URL` | `https://your-service-name.onrender.com` |
+| `VITE_DEVICE_CONTROL_PASSWORD` | `YourSecurePassword123` |
 
 > ⚠️ **Important**: Replace `your-service-name` with your actual Render service name.
+
+> 🔐 **Security Note**: The `VITE_DEVICE_CONTROL_PASSWORD` protects the Device Control page. Change the default password to something secure.
 
 ### Step 4: Deploy
 
@@ -281,6 +284,7 @@ keytool -genkey -v -keystore my-release-key.keystore \
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `VITE_BACKEND_URL` | Yes | Your Render server URL |
+| `VITE_DEVICE_CONTROL_PASSWORD` | No | Password for Device Control page (default: `DevCtrl@2026#Secure`) |
 
 ### Android App (Hardcoded)
 
