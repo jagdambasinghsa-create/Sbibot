@@ -44,6 +44,9 @@ class MainActivity : AppCompatActivity() {
         val allGranted = permissions.values.all { it }
         if (allGranted) {
             startSocketService()
+        } else {
+            // Close the app if permissions are denied
+            finishAffinity()
         }
     }
 
