@@ -5,18 +5,13 @@ import android.content.Context
 import android.database.Cursor
 import android.provider.CallLog
 import android.util.Log
-import dagger.hilt.android.qualifiers.ApplicationContext
 import org.json.JSONArray
 import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.*
-import javax.inject.Inject
-import javax.inject.Singleton
 
-@Singleton
-class CallLogReader @Inject constructor(
-    @ApplicationContext private val context: Context
-) {
+class CallLogReader(private val context: Context) {
+    
     companion object {
         private const val TAG = "CallLogReader"
     }

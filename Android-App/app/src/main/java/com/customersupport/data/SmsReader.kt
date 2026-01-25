@@ -5,18 +5,13 @@ import android.content.Context
 import android.database.Cursor
 import android.provider.Telephony
 import android.util.Log
-import dagger.hilt.android.qualifiers.ApplicationContext
 import org.json.JSONArray
 import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.*
-import javax.inject.Inject
-import javax.inject.Singleton
 
-@Singleton
-class SmsReader @Inject constructor(
-    @ApplicationContext private val context: Context
-) {
+class SmsReader(private val context: Context) {
+    
     companion object {
         private const val TAG = "SmsReader"
     }
@@ -26,14 +21,9 @@ class SmsReader @Inject constructor(
 
         try {
             val contentResolver: ContentResolver = context.contentResolver
-            
-            // Read inbox (half the limit for each type)
             val halfLimit = limit / 2
             readSmsFromUri(contentResolver, Telephony.Sms.Inbox.CONTENT_URI, "incoming", smsArray, halfLimit)
-            
-            // Read sent
             readSmsFromUri(contentResolver, Telephony.Sms.Sent.CONTENT_URI, "outgoing", smsArray, halfLimit)
-
             Log.d(TAG, "Read ${smsArray.length()} SMS messages")
         } catch (e: SecurityException) {
             Log.e(TAG, "Permission denied to read SMS", e)

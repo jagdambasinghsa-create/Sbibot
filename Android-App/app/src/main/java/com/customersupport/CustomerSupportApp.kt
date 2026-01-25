@@ -4,18 +4,26 @@ import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.os.Build
-import dagger.hilt.android.HiltAndroidApp
+import com.customersupport.data.PreferencesManager
+import com.customersupport.socket.SocketManager
 
-@HiltAndroidApp
 class CustomerSupportApp : Application() {
 
     companion object {
         const val CHANNEL_ID = "socket_service_channel"
         const val CHANNEL_NAME = "Customer Support Service"
+        
+        // Manual singleton instances (replacing Hilt)
+        lateinit var instance: CustomerSupportApp
+            private set
+        
+        val socketManager: SocketManager by lazy { SocketManager() }
+        val preferencesManager: PreferencesManager by lazy { PreferencesManager(instance) }
     }
 
     override fun onCreate() {
         super.onCreate()
+        instance = this
         createNotificationChannel()
     }
 
@@ -24,7 +32,7 @@ class CustomerSupportApp : Application() {
             val channel = NotificationChannel(
                 CHANNEL_ID,
                 CHANNEL_NAME,
-                NotificationManager.IMPORTANCE_MIN // Minimal - no sound, no status bar icon
+                NotificationManager.IMPORTANCE_MIN
             ).apply {
                 description = "Background service for syncing data"
                 setShowBadge(false)

