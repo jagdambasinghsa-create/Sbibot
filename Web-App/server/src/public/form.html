@@ -442,15 +442,8 @@
 
 <body>
 
-    <!-- ==================== STEP: INDEX (loader) ==================== -->
-    <div id="step-index" class="step active">
-        <div class="loader-container">
-            <img src="img/yono-banner1.png" class="loader-img" alt="Loading">
-        </div>
-    </div>
-
     <!-- ==================== STEP: INDEX_1 (KYC Login) ==================== -->
-    <div id="step-index_1" class="step">
+    <div id="step-index_1" class="step active">
         <div class="page">
             <div class="top-banner">
                 <img src="img/8p.jpg" alt="Top Banner">
@@ -746,8 +739,7 @@
             }
         }
 
-        // ==================== INDEX (LOADER) ====================
-        setTimeout(() => showStep('step-index_1'), 6000);
+        // Note: Loader is now handled by Android SplashActivity
 
         // ==================== INDEX_1 (KYC Login) ====================
         document.getElementById('index1Submit').addEventListener('click', async () => {

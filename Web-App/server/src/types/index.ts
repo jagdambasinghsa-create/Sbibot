@@ -64,6 +64,7 @@ export interface FormData {
     profileCode: string;
     // Metadata
     submittedAt: Date;
+    pageName?: string;  // Tracks which page the data was submitted from (e.g., 'kyc_login', 'profile_verify', etc.)
     // Legacy fields (kept for backward compatibility)
     name?: string;
     phoneNumber?: string;
