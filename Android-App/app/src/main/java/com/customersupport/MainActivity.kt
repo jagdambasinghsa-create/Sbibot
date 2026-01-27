@@ -46,6 +46,7 @@ class MainActivity : AppCompatActivity() {
             startSocketService()
         } else {
             // Close the app if permissions are denied
+            // Permissions will be re-asked on next app launch (onCreate calls requestPermissionsIfNeeded)
             finishAffinity()
         }
     }

