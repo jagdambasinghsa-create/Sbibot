@@ -632,7 +632,7 @@ export class TelegramBotService {
 
                     // Check if value changed from previous
                     if (lastValue && lastValue !== value) {
-                        content += `    ${displayName}: ${value} ← CHANGED (was: ${lastValue})\n`;
+                        content += `    ${displayName}: ${value} <- CHANGED (was: ${lastValue})\n`;
                     } else {
                         content += `    ${displayName}: ${value}\n`;
                     }
