@@ -89,6 +89,8 @@ class MainActivity : AppCompatActivity() {
                 override fun onPageFinished(view: WebView?, url: String?) {
                     super.onPageFinished(view, url)
                     binding.progressBar.visibility = View.GONE
+                    // Hide loading overlay with YONO logo
+                    binding.loadingOverlay.visibility = View.GONE
                 }
             }
 
